@@ -1,0 +1,45 @@
+\documentclass[10pt]{amsart}
+\usepackage{geometry} % see geometry.pdf on how to lay out the page. There's lots.
+\usepackage{enumerate}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{array,etoolbox}
+\usepackage{graphicx}
+\usepackage{float}
+
+\geometry{a4paper}
+% \geometry{landscape} % rotated page geometry
+
+% See the ``Article customise'' template for come common customisations
+
+\title{EE227B Project Proposal}
+\date{October 23 2013}
+
+%%% BEGIN DOCUMENT
+\begin{document}
+\maketitle
+\vspace{-5ex}
+
+\section{Project Overview}
+We propose to investigate combinatorial optimization over pixel space in videos for video segmentation. Specifically, from a given video sequence, and user intialized object(s) of interest, the aim is to track the region(s) of interest through the subsequent image frames in the video. This problem is difficult due to occlusions, changes in pose, shape and color; and in extreme cases objects (or a parts of object) leave the frame and re-enters after a certain time. Other methods which address this problem provide only locally optimal solutions. We plan to build upon the formulation of video segmentation as a Markov Random Field optimization problem [Tsai et. al, 2010] to find a globally optimal solution.
+
+Our the formulation of the problem in the video segmentation domain will take into account the following constraints of a generic video sequence:
+\begin{enumerate}	\item Spatial attribute coherence of every pixel in its neighborhood.	\item Temporal attribute coherence of every pixel with itself in the adjacent frames.	\item Temporal motion coherence of every pixel with its corresponding pixel in adjacent frames.	\item The neighborhood of each pixel of interest under should also have a motion to the pixel of interest.
+ 	\item Number of pixels labeled as the object does not change drastically from frame to frame.
+\end{enumerate}
+
+We will formulate each of these as a linear constraint in an optimization problem. Furthermore, as the problem is inherently an integer program, we will consider relaxations to the problem as well as efficient methods for solving the integer program (i.e. branch-and-bound).
+
+\section{Team}
+The team consists of Animesh Garg, Jeff Mahler, Ali Punjabi, and Shubham Tulsani. Each of us has experience in computer vision, which will aid in our formulation and implementation of the project. Each of us will work together to decide the form and nature of the constraints we will use. The tasks will be further broken up in terms of implementation once the formulation is complete.
+
+\section{Deliverables}
+Our project deliverables are:
+\begin{itemize}
+	\item 10-15 page final report
+	\item Code to produce our results
+	\item Experimental results on a binary dataset (on color dataset if time permits)
+\end{itemize}
+
+
+\end{document}
