@@ -49,7 +49,7 @@ for i = 1:1 %num_videos
     end
     
     % get the initial flows
-    [m, n, c] = size(video_frames(1));
+    [m, n, c] = size(video_frames{1});
     n_frames = size(video_frames,2);
     initial_flows = cell(1, n_frames-1);
     optical_flow = vision.OpticalFlow('OutputValue', ...
@@ -63,6 +63,8 @@ for i = 1:1 %num_videos
     % convert flows to u,v and then to max likely weights
     initial_weights = cell(1,size(initial_flows,2));
     for j = 1:(n_frames-1)
+        fprintf('Computing initial weights for frame %d...\n', j);
+        
         U = real(initial_flows{j});
         V = imag(initial_flows{j});
         
@@ -75,9 +77,9 @@ for i = 1:1 %num_videos
         V = int8(V);
         
         weight_map = zeros(m, n, 2*b+1, 2+b+1);
-        for a = 1:m
-            for b = 1:n
-                weight_map(:,:,U(i,j)+1,V(i,j)+b+1) = 1;
+        for x = 1:m
+            for y = 1:n
+                weight_map(x,y,U(i,j)+b+1,V(i,j)+b+1) = 1;
             end
         end
         initial_weights{j} = weight_map;
