@@ -1,0 +1,145 @@
+%% LyX 2.0.6 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{geometry}
+\geometry{verbose,tmargin=1cm,bmargin=1.5cm,lmargin=1cm,rmargin=1cm}
+\usepackage{float}
+\usepackage{calc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{babel}
+\begin{document}
+
+\section{Project Update}
+
+
+\subsection*{Problem Formulation}
+
+
+\subsubsection*{Notations and Variables}
+\begin{itemize}
+\item We denote the video volume by $I$. A pixel in $I$ is indexed by
+its location in space as well as time and is denoted by $I_{ijt}$
+\item We wish to recover a complete segmentation of the video into foreground
+and background. This labelling is captured by the variable $X$ where
+$X_{ijt}\in\{0,1\}$
+\item The time continuity between frames in a video implies that any pixel
+in a given frame corresponds to some pixel in the next frame. We capture
+this notion by a weak correspondence between a pixel and its neighbors
+in the next frame. The correspondence weights for a pixel are denoted
+by $W_{ijt}^{ab}$ ($a,b\in\{-h,..,h\}$) i.e we define a correspondence
+weight variable between each pixel and the $(2h+1)X(2h+1)$ grid surrounding
+it in the next frame.
+\item By $N_{s}(i,j,t)$, we denote the indices of the pixels in the spatial
+neighborhood of the pixel $(i,j,t)$
+\item We define pseudo-variables $U,V,\overline{U},\overline{V}$ for notational
+convenience. The variables $(U,V)$ capture the average motion direction
+of a pixel between consecutive frames in X, Y directions respectively.
+We also denote the average direction of motion of the neighborhood
+of a pixel by $(\overline{U}_{ijt},\overline{V}_{ijt}).$ These pseudo
+variables are defined in terms of the previously defined variables
+as follows -
+\begin{equation}
+U_{ijt}=\underset{a,b\in\{-h,..,h\}}{\sum}aW_{ijt}^{ab}
+\end{equation}
+\begin{equation}
+V_{ijt}=\underset{a,b\in\{-h,..,h\}}{\sum}bW_{ijt}^{ab}
+\end{equation}
+\begin{equation}
+(\overline{U}_{ijt},\overline{V}_{ijt})=\frac{1}{|N_{s}(i,j,t)|}\underset{Y\in N_{s(i,j,t)}}{\sum}(U_{Y},V_{Y})
+\end{equation}
+
+\end{itemize}
+
+\subsubsection*{Objective}
+
+\begin{equation}
+\underset{X,W}{\min}\enskip\lambda_{1}A(X,I)+\lambda_{2}S(X)+\lambda_{3}T(X,W)+\lambda_{4}F(W,I)+\lambda_{5}C(W)+\lambda_{6}M(W)
+\end{equation}
+
+
+\begin{center}
+subject to $W\geq0,\forall(i,j,t)X_{ijt}\in\{0,1\},\underset{a,b}{\sum}W_{ijt}^{ab}=1$
+and $\forall t\underset{i,j}{|\sum}X_{ijt}-\underset{i,j}{\sum}X_{ij(t+1)}|\leq\sigma\underset{i,j}{\sum}X_{ijt}$
+\par\end{center}
+
+\noindent The objective function comprises of various penatly terms
+which are explained below. The last constraint specifies that the
+number of foreground pixels in do not change rapidly between consecutive
+frames.
+
+
+\subsubsection*{Appearance Model $A(X,I)$}
+
+Given the initial user labelled segmentation $X'$, we can form a
+foreground model and a corresponding penalty function $f_{I,X'}$
+for a pixel's label given its value. We then define the unary potential
+as follows -
+
+\begin{equation}
+A(X,I)=\underset{i,j,t}{\sum}f_{I,X'}(X_{ijt},I_{ijt})
+\end{equation}
+
+
+
+\subsubsection*{Spatial Labelling Coherence $S(X,I)$}
+
+We want to drive the system towards a labelling where neighbouring
+pixels have similar labels. The spatial labelling coherence term defined
+below encapsulates this.
+
+\begin{equation}
+S(X)=\underset{i,j,t}{\sum}\quad\underset{Y\in N_{s}(i,j,t)}{\sum}|X_{ijt}-X_{Y}|
+\end{equation}
+
+
+
+\subsubsection*{Temporal Labelling Coherence $T(X,W,I)$}
+
+For a given pixel, the corresponding pixel in the next frame should
+also have the same label. We formalize this notion using the penalty
+function below.
+
+\begin{equation}
+T(X,W)=\underset{i,j,t}{\sum}\quad\underset{a,b\in\{-h,..,h\}}{\sum}W_{ijt}^{ab}|X_{ijt}-X_{i+a,j+b,t+1}|
+\end{equation}
+
+
+
+\subsubsection*{Flow Similarity $F(W,I)$}
+
+For each pixel, the corresponding pixel in the next frame should be
+similar. This is enforced by the flow similarity defined below.
+
+\begin{equation}
+F(X,I)=\underset{i,j,t}{\sum}\quad\underset{a,b\in\{-h,..,h\}}{\sum}W_{ijt}^{ab}|I_{ijt}-I_{i+a,j+b,t+1}|
+\end{equation}
+
+
+
+\subsubsection*{Flow Continuity $C(W)$}
+
+The direction of movement of pixels is continuous over a small spatial
+neighbourhood. We therefore penalize rapid variations in flow as follows-
+
+\begin{equation}
+C(W)=\underset{i,j,t}{\sum}|U_{ijt}-\overline{U}_{ijt}|+|V_{ijt}-\overline{V}_{ijt}|
+\end{equation}
+
+
+
+\subsubsection*{Momentum Continuity $M(W,I)$}
+
+It also needs to be enforced that the velocity of a pixel and its
+corresponding pixel in the next frame do not vary rapidly. This is
+ensured by the momentum continuity terms defined below
+
+\begin{equation}
+M(W)=\underset{i,j,t}{\sum}\quad\underset{a,b\in\{-h,..,h\}}{\sum}W_{ijt}^{ab}(|a-\overline{U}_{i+a,j+b,t+1}|+|b-\overline{V}_{i+a,j+b,t+1}|)
+\end{equation}
+\newpage{}
+
+
+\end{document}
