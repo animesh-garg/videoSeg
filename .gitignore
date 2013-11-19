@@ -2,3 +2,6 @@
 /docs/*.aux
 /docs/*.log
 /docs/*.out
+/docs/*.bbl
+/docs/*.bak
+/docs/*.blg

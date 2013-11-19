@@ -52,8 +52,8 @@
 \begin{document} 
 
 \twocolumn[
-\icmltitle{Submission and Formatting Instructions for the Thirty-first \\ 
-           International Conference on Machine Learning (ICML 2014)}
+\icmltitle{Video Segmentation as a Distributed Convex Optimization Problem\\
+ using Primal Decomposition} 
 
 % It is OKAY to include author information, even for blind
 % submissions: the style file will automatically remove it for you
@@ -62,8 +62,7 @@
 \icmlauthor{Animesh Garg*}{animesh.garg@berkeley.edu}
 \icmlauthor{Jeff Mahler*}{jmahler@berkeley.edu}
 \icmlauthor{Shubham Tulsiani*}{shubhtuls@berkeley.edu}
-%\icmladdress{Their Fantastic Institute,
- %           27182 Exp St., Toronto, ON M6H 2T1 CANADA}
+\icmladdress{Department of EECS, UC Berkeley, CA 94720}
 
 % You may provide any keywords that you 
 % find helpful for describing your paper; these are used to populate 
@@ -79,14 +78,35 @@ A majority of existing methodstrack but provide a bounding box rather than a an 
 mask for the object. For real worl applications of perception, like robotics, the silhoutte of the object
 perhaps even pose need to be known for hope of success in manipulation tasks.
 
+We propose a method in this study which formulated the problem of video segmentation
+as a Markov random field. However solving such a large graph to global optimality may 
+be computationally expensive. Hence we propose a distributed method using Primal 
+decomposition. 
+
 \end{abstract} 
 
 
-\section{Project Update}
+\section{Introduction}
 
+The problem of video segmentation is of interest for many areas. 
+\cite{Komodakis2007a, Komodakis2011a} and \cite{Tsai2010}
+have looked at the problem of modelling the MRF in terms of energies. 
+The solution strategy they use is Dual decomposition but without integer programming.
 
+Our study explores the use of state-of-the-art integer program solvers. Modelling integers
+allows us to capture more rich features in video which are usually not directly put in current 
+models. 
+From a given video sequence, and user intialized object(s)
+of interest, the aim is to track the region(s) of interest through
+the subsequent image frames in the video. Majority of other
+methods which address the problem provide locally optimal
+solutions. Such an approach though successful in some applications
+requires a substantial amount of human intervention
+at several points in the solution such as in cases of occlusion,
+change in pose, shape and color and in extreme cases object
+(or a part of object) egresses the frame and re-enters later.
 \section{Problem Formulation}
-
+\label{sec:ProbForm}
 \subsubsection*{Notations and Variables}
 \begin{itemize}
 \item We denote the video volume by $I$. A pixel in $I$ is indexed by
@@ -217,7 +237,25 @@ M(W)=\underset{i,j,t}{\sum}\quad\underset{a,b\in\{-h,..,h\}}{\sum}W_{ijt}^{ab}(|
 
 
 \section{Experiments and Metrics}
-\label{experiments}
+\label{sec:Expt}
+As presented in the model in Section~\ref{sec:ProbForm} we have a complete optimization
+model with several integer variables for foreground-background labels.
+
+We will test the performance of our solution on the 
+Berkeley Motion Segmentation Dataset as provided by \cite{brox2010object}.
+The dataset has 26 video sequences with pixel-accurate segmentation annotation of moving objects. A total of 189 frames are annotated.
+
+We will evaluate results from our approach and compare the performance with that of \cite{Felzenszwalb2010b}, \cite{Komodakis2011a}
+and \cite{brox2010object} on this dataset.
+
+Furthermore multiple decoupling strategies will implementation and compared,
+like decoupling time frames v/s decoupling in space. Finally a dual decomposition
+method with also be explored and compared qualitatively with \cite{Komodakis2007a}.
+
+We plan on completing the implementation in MATLAB with the use of CVX and CPLEX
+optimization libraries.
+
+
 
 % Acknowledgements should only appear in the accepted version. 
 %\section*{Acknowledgments} 
