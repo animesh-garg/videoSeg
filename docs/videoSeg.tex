@@ -176,7 +176,7 @@ A(X,I)=\underset{i,j,t}{\sum}f_{I,X'}(X_{ijt},I_{ijt})
 
 
 
-\subsubsection*{Spatial Labelling Coherence $S(X,I)$}
+\subsubsection*{Spatial Labelling Coherence $S(X)$}
 
 We want to drive the system towards a labelling where neighbouring
 pixels have similar labels. The spatial labelling coherence term defined
@@ -188,7 +188,7 @@ S(X)=\underset{i,j,t}{\sum}\quad\underset{Y\in N_{s}(i,j,t)}{\sum}|X_{ijt}-X_{Y}
 
 
 
-\subsubsection*{Temporal Labelling Coherence $T(X,W,I)$}
+\subsubsection*{Temporal Labelling Coherence $T(X,W)$}
 
 For a given pixel, the corresponding pixel in the next frame should
 also have the same label. We formalize this notion using the penalty
@@ -222,7 +222,7 @@ C(W)=\underset{i,j,t}{\sum}|U_{ijt}-\overline{U}_{ijt}|+|V_{ijt}-\overline{V}_{i
 
 
 
-\subsubsection*{Momentum Continuity $M(W,I)$}
+\subsubsection*{Momentum Continuity $M(W)$}
 
 It also needs to be enforced that the velocity of a pixel and its
 corresponding pixel in the next frame do not vary rapidly. This is
