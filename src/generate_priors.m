@@ -1,88 +1,94 @@
 % Script to generate priors for our video segementatino algorithm
 %   Uses the moseg_dataset and 3rd party NCuts code
 %   Author: Jeff 
-function [initial_segment, initial_flows, initial_weights, avg_I_f, avg_I_b] = ...
-    generate_priors(window_size, video_folder, downsample_rate)
+function [initialSegment, initialFlows, initialWeights, avgColorF, avgColorB] = ...
+    generate_priors(videoName)
 
-%% Process all images in the given video sequence
-d = downsample_rate; % downsampling values
-b = window_size;
+%% Get all images in a video sequence
+startup;
 
-% folder files 
-folder_files = dir(video_folder);
-video_frames = {};
-   
+videoPath = sprintf('%s%s', datasetPath, videoName);
+folderContents = dir(videoPath);
+videoFrames = {};
+  
 % read in all of the frames
 k = 1;
-for j = 1:size(folder_files,1)
-    name = folder_files(j).name;
+for j = 1:size(folderContents,1)
+    name = folderContents(j).name;
     if length(name) > 4 && ...
         strcmp(name((size(name,2)-3):size(name,2)), '.jpg')
         
-        name = sprintf('%s/%s',video_folder, name);
+        name = sprintf('%s/%s', videoPath, name);
         fprintf('Loading image %s ...\n',name);
-        video_frames{k} = imread(name);
+        videoFrames{k} = imread(name);
         k = k+1;
     elseif length(name) > 6 && ...
         strcmp(name((size(name,2)-5):size(name,2)), '01.pgm')
-        name = sprintf('%s/%s',video_folder, name);
-        initial_segment = imread(name);
+        name = sprintf('%s/%s',videoPath, name);
+        initialSegment = imread(name);
         
         % pick out only one of the possible object to segment, and store
         % initial segmentation as 0 or 1 valued array
-        initial_segment(initial_segment < 255) = 0;      
-        initial_segment(initial_segment==255) = 1;
+        initialSegment(initialSegment < 255) = 0;      
+        initialSegment(initialSegment==255) = 1;
     end
 end
-    
+   
+% downsample the images
+[m, n, c] = size(videoFrames{1});
+nFrames = size(videoFrames,2);
+mDown = m / d;
+nDown = n / d;
+for i = 1:nFrames
+    videoFrames{i} = imresize(videoFrames{i}, [mDown nDown]);
+end
+initialSegment = imresize(initialSegment, [mDown nDown]);
+
 % get the initial flows
-[m, n, c] = size(video_frames{1});
-n_frames = size(video_frames,2);
-initial_flows = cell(1, n_frames-1);
+initialFlows = cell(1, nFrames-1);
 optical_flow = vision.OpticalFlow('OutputValue', ...
         'Horizontal and vertical components in complex form', ...
         'ReferenceFrameSource', 'Input port', ...
         'Method', 'Lucas-Kanade');
-for j =2:n_frames
-    initial_flows{j-1} = step(optical_flow, ...
-        double(rgb2gray(video_frames{j})), ...
-        double(rgb2gray(video_frames{j-1})));
+for j =2:nFrames
+    initialFlows{j-1} = step(optical_flow, ...
+        double(rgb2gray(videoFrames{j})), ...
+        double(rgb2gray(videoFrames{j-1})));
 end
-    
+
 % convert flows to u,v and then to max likely weights
-initial_weights = cell(1,size(initial_flows,2));
-for j = 1:(n_frames-1)
+initialWeights = cell(1,size(initialFlows,2));
+for j = 1:(nFrames-1)
     fprintf('Computing initial weights for frame %d...\n', j);
         
-    U = real(initial_flows{j});
-    V = imag(initial_flows{j});    
-    initial_weights{j} = uv_to_weights(U, V, b);
+    U = real(initialFlows{j});
+    V = imag(initialFlows{j});    
+    initialWeights{j} = uv_to_weights(U, V, b);
 end
 
 %% Compute the appearance model constants
-avg_I_f = zeros(1,3);
-avg_I_b = zeros(1,3);
+avgColorF = zeros(1,3);
+avgColorB = zeros(1,3);
 
-[m, n] = size(video_frames{1});
-n_frames = size(video_frames,2);
-n_pixels_frame = m * n;
-n_pixels_foreground = sum(sum(initial_segment));
-n_pixels_background = n_pixels_frame - n_pixels_foreground;
-n_pixels_total= n_frames * n_pixels_frame;
+nFrames = size(videoFrames,2);
+nPixFrame = mDown * nDown;
+nPixForeground = sum(sum(initialSegment));
+nPixBackground = nPixFrame - nPixForeground;
+nPixTotal = nFrames * nPixFrame;
 
 % get averages for appearance model cost
-avg_I_f(1) = (1.0 / n_pixels_foreground) * ...
-    sum(sum(video_frames{1}(:,:,1).*initial_segment));
-avg_I_f(2) = (1.0 / n_pixels_foreground) * ...
-    sum(sum(video_frames{1}(:,:,2).*initial_segment));
-avg_I_f(3) = (1.0 / n_pixels_foreground) * ...
-    sum(sum(video_frames{1}(:,:,3).*initial_segment));
+avgColorF(1) = (1.0 / nPixForeground) * ...
+    sum(sum(videoFrames{1}(:,:,1).*initialSegment));
+avgColorF(2) = (1.0 / nPixForeground) * ...
+    sum(sum(videoFrames{1}(:,:,2).*initialSegment));
+avgColorF(3) = (1.0 / nPixForeground) * ...
+    sum(sum(videoFrames{1}(:,:,3).*initialSegment));
 
-avg_I_b(1) = (1.0 / n_pixels_background) * ...
-    sum(sum(video_frames{1}(:,:,1).*(1-initial_segment)));
-avg_I_b(2) = (1.0 / n_pixels_background) * ...
-    sum(sum(video_frames{1}(:,:,2).*(1-initial_segment)));
-avg_I_b(3) = (1.0 / n_pixels_background) * ...
-    sum(sum(video_frames{1}(:,:,3).*(1-initial_segment)));
+avgColorB(1) = (1.0 / nPixBackground) * ...
+    sum(sum(videoFrames{1}(:,:,1).*(1-initialSegment)));
+avgColorB(2) = (1.0 / nPixBackground) * ...
+    sum(sum(videoFrames{1}(:,:,2).*(1-initialSegment)));
+avgColorB(3) = (1.0 / nPixBackground) * ...
+    sum(sum(videoFrames{1}(:,:,3).*(1-initialSegment)));
 
 end
