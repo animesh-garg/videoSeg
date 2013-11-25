@@ -5,10 +5,9 @@
 clear; clc; close all;
 
 %% Get all images in a video sequence
+startup;
 
-b = 2;
-nbSegments = 10;
-dir_contents = dir('moseg_dataset');
+dir_contents = dir(datasetPath);
 video_folders = {};
 
 n = 1;
@@ -26,7 +25,7 @@ for i = 1:1 %num_videos
     video_folder = video_folders{i};
     
     % meat of the algo
-    folder_files = dir(sprintf('moseg_dataset/%s', video_folder));
+    folder_files = dir(sprintf([datasetPath '%s'], video_folder));
     video_frames = {};
    
     % read in all of the frames
@@ -36,13 +35,13 @@ for i = 1:1 %num_videos
         if length(name) > 4 && ...
                 strcmp(name((size(name,2)-3):size(name,2)), '.jpg')
         
-            name = sprintf('moseg_dataset/%s/%s',video_folder, name);
+            name = sprintf([datasetPath '%s/%s'],video_folder, name);
             fprintf('%s\n',name);
             video_frames{k} = imread(name);
             k = k+1;
         elseif length(name) > 6 && ...
                 strcmp(name((size(name,2)-5):size(name,2)), '01.pgm')
-            name = sprintf('moseg_dataset/%s/%s',video_folder, name);
+            name = sprintf([datasetPath '%s/%s'],video_folder, name);
             initial_segment = imread(name);
             initial_segment(initial_segment < 255) = 0;
         end
@@ -54,7 +53,7 @@ for i = 1:1 %num_videos
     initial_flows = cell(1, n_frames-1);
     optical_flow = vision.OpticalFlow('OutputValue', ...
         'Horizontal and vertical components in complex form');
-    P = step(optical_flow, double(rgb2gray(video_frames{1})));
+    
     for j =2:n_frames
         initial_flows{j-1} = step(optical_flow, ...
             double(rgb2gray(video_frames{j})));
