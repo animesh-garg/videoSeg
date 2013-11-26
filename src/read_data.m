@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 function [videoStruct] = read_data(videoName)
 %READ_DATA Returns a struct for the given video name
 %   Input : videoName (eg - 'Cars1')
@@ -37,12 +36,3 @@ videoStruct.I = I;
 videoStruct.X1 = X1;
 
 end
-=======
-function [ output_args ] = read_data( input_args )
-%READ_DATA Summary of this function goes here
-%   Detailed explanation goes here
-
-
-end
-
->>>>>>> 78812a5e33655e88215d3ad9256cba61958cf9a4
