@@ -7,7 +7,6 @@ function [initU, initV, initW, avgColorF, avgColorB] = ...
 % avgColorF, avgColorB : avg pixel color for foreground and background
 % respectively
 
-
 %% initializing some variable values
 startup;
 I = videoStruct.I;
