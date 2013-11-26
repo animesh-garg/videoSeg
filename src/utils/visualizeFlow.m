@@ -3,7 +3,7 @@ function [] = visualizeFlow(img,U,V)
 %visualizes the flow field
 %   Detailed explanation goes here
 
-interval = 10;
+interval = 5;
 
 [dimy,dimx,~] = size(img);
 x = 1:interval:dimx;
