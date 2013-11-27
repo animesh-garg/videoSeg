@@ -38,17 +38,17 @@ function [newW] = solveWeights(X, W, video, lambda, d)
         X_tplus = X{t+1};
         I_t = double(video.I{t});
         I_tplus = double(video.I{t+1});
-        for i = 1:m
-            for j = 1:n
+        for i = 1:M
+            for j = 1:N
                 for b = (-d):d
                     for a = (-d):d
                         i_tplus = min(max(i+a,1), M);
                         j_tplus = min(max(j+b,1), M);
                        
-                        P(i) = abs(X_t(i,j) - X_tplus(i_tplus,j_tplus));
-                        Q(i) = abs(I_t(i,j,1) - I_tplus(i_tplus,j_tplus,1)) + ...
-                            abs(I_t(i,j,2) - I_tplus(i_tplus,j_tplus,2)) + ...
-                            abs(I_t(i,j,3) - I_tplus(i_tplus,j_tplus,3));
+                        P(index) = abs(X_t(i,j) - X_tplus(i_tplus,j_tplus));
+                        Q(index) = abs(I_t(i,j,1) - I_tplus(i_tplus,j_tplus,1)) + ...
+                                abs(I_t(i,j,2) - I_tplus(i_tplus,j_tplus,2)) + ...
+                                abs(I_t(i,j,3) - I_tplus(i_tplus,j_tplus,3));
                         
                         index = index+1;
                     end
@@ -66,8 +66,8 @@ function [newW] = solveWeights(X, W, video, lambda, d)
     
     % M cost - create H matrix for quadratic momentum penalty
     H = sparse(numVariables, numVariables);
-    H(1:numWeights,(numWeights+2*numPixels):numVariables) = ...
-        [eye(numWeights), eye(numWeights)];
+    H(1:numWeights,(numWeights+2*numPixels+1):numVariables) = ...
+        [eye(numWeights) eye(numWeights)];
     H = lambda(6)*H;
     
     P = lambda(3)*P + lambda(4)*Q + lambda(5)*C; % final linear cost term
@@ -75,11 +75,11 @@ function [newW] = solveWeights(X, W, video, lambda, d)
     % Equality constraints - ensure weights sum to 1
     Aeq = sparse(numWeights, numVariables);
     startIndex = 1;
-    endIndex = startIndex + nWeightsPerPixel;
+    endIndex = startIndex + numWeightsPerPixel -1;
     for i = 1:numPixels
-       Aeq(i,startIndex:endIndex) = ones(1, nWeightsPerPixels);
+       Aeq(i,startIndex:endIndex) = ones(1, numWeightsPerPixel);
        startIndex = endIndex + 1;
-       endIndex = startIndex + nWeightsPerPixel;
+       endIndex = startIndex + numWeightsPerPixel - 1;
     end
     beq = ones(numWeights, 1);
     
@@ -92,6 +92,7 @@ function [newW] = solveWeights(X, W, video, lambda, d)
     numInequalityConstraints = numWeights + 2*numPixels + 2*numPixels + ...
         2*numWeights + 2*numWeights;
     Aineq = sparse(numInequalityConstraints, numVariables);
+    bineq = sparse(numInequalityConstraints, 1);
     
     % Constraint 1
     Aineq(1:numWeights,1:numWeights) = -eye(numWeights);
@@ -103,7 +104,7 @@ function [newW] = solveWeights(X, W, video, lambda, d)
     
     % Constraint 2 - U spatial consistency constraint
     startIndex = 1;
-    endIndex = startIndex + numWeightsPerPixel;
+    endIndex = startIndex + numWeightsPerPixel - 1;
     for t = 0:(T-1)
         for i = 1:M
             for j = 1:N
@@ -115,9 +116,11 @@ function [newW] = solveWeights(X, W, video, lambda, d)
                 endX = max(min(j+d, N), 1);
                 startY = max(min(i-d, M), 1);
                 endY = max(min(i+d, M), 1);
-                xInterval = endX-startX;
-                yInterval = endY-startY;
+                xInterval = endX-startX+1;
+                yInterval = endY-startY+1;
                 nSummed = xInterval*yInterval;
+                startX = numWeightsPerPixel*(startX-1)+1;
+                endX = numWeightsPerPixel*endX;
                 
                 f = sparse(M, numWeightsPerPixel*N);
                 f(startY:endY, startX:endX) = (1.0 / nSummed) * ...
@@ -127,14 +130,14 @@ function [newW] = solveWeights(X, W, video, lambda, d)
                 g((t*numWeightsPerFrame+1):((t+1)*numWeightsPerFrame)) = f;
     
                 Y_index = numWeights + (j-1)+(i-1)*N+t*M*N + 1;
-                Aineq(index+0, startIndex:endIndex) = c - g;
+                Aineq(index+0, :) = c - g;
                 Aineq(index+0, Y_index) = -1;
                 
-                Aineq(index+1, startIndex:endIndex) = g - c;
+                Aineq(index+1, :) = g - c;
                 Aineq(index+1, Y_index) = -1;
 
                 startIndex = endIndex + 1;
-                endIndex = startIndex + numWeightsPerPixel;
+                endIndex = startIndex + numWeightsPerPixel - 1;
                 index = index+1;
             end
         end
@@ -142,7 +145,7 @@ function [newW] = solveWeights(X, W, video, lambda, d)
     
     % Constraint 3 - V spatial consistency constraint
     startIndex = 1;
-    endIndex = startIndex + numWeightsPerPixel;
+    endIndex = startIndex + numWeightsPerPixel - 1;
     for t = 0:(T-1)
         for i = 1:M
             for j = 1:N
@@ -154,26 +157,28 @@ function [newW] = solveWeights(X, W, video, lambda, d)
                 endX = max(min(j+d, N), 1);
                 startY = max(min(i-d, M), 1);
                 endY = max(min(i+d, M), 1);
-                xInterval = endX-startX;
-                yInterval = endY-startY;
+                xInterval = endX-startX+1;
+                yInterval = endY-startY+1;
                 nSummed = xInterval*yInterval;
+                startX = numWeightsPerPixel*(startX-1)+1;
+                endX = numWeightsPerPixel*endX;
                 
                 f = sparse(M, numWeightsPerPixel*N);
                 f(startY:endY, startX:endX) = (1.0 / nSummed) * ...
-                    repmat(alpha, [yInterval xInterval]);
+                    repmat(beta, [yInterval xInterval]);
                 f = reshape(f', [1 numWeightsPerFrame]);
                 g = sparse(1, numVariables);
                 g((t*numWeightsPerFrame+1):((t+1)*numWeightsPerFrame)) = f;
 
                 Z_index = numWeights + numPixels + (j-1)+(i-1)*N+t*M*N + 1;
-                Aineq(index+0, startIndex:endIndex) = c - g;
+                Aineq(index+0, :) = c - g;
                 Aineq(index+0, Z_index) = -1;
                 
-                Aineq(index+1, startIndex:endIndex) = g - c;
+                Aineq(index+1, :) = g - c;
                 Aineq(index+1, Z_index) = -1;
 
                 startIndex = endIndex + 1;
-                endIndex = startIndex + numWeightsPerPixel;
+                endIndex = startIndex + numWeightsPerPixel - 1;
                 index = index+1;
             end
         end
@@ -191,7 +196,7 @@ function [newW] = solveWeights(X, W, video, lambda, d)
                         startIndex = (j_tplus-1)*numWeightsPerPixel + ...
                             (i_tplus-1)*numWeightsPerPixel*N + ...
                             (t+1)*numWeightsPerPixel*N*M + 1;
-                        endIndex = startIndex + numWeightsPerPixel;
+                        endIndex = startIndex + numWeightsPerPixel - 1;
                         
                         c = sparse(1, numVariables);
                         c(startIndex:endIndex) = alpha;
@@ -201,14 +206,14 @@ function [newW] = solveWeights(X, W, video, lambda, d)
                             (j-1)*numWeightsPerPixel + ...
                             (i-1)*numWeightsPerPixel*N + ...
                             t*numWeightsPerPixel*N*M + 1;
-                        Aineq(index+0, startIndex:endIndex) = -c;
+                        Aineq(index+0, :) = -c;
                         Aineq(index+0, R_index) = -1;
 
-                        Aineq(index+1, startIndex:endIndex) = c;
+                        Aineq(index+1, :) = c;
                         Aineq(index+1, R_index) = -1;
 
-                        b_ineq(index+0) = -a;
-                        b_ineq(index+1) = a;
+                        bineq(index+0) = -a;
+                        bineq(index+1) = a;
                         
                         index = index+1;
                     end
@@ -229,7 +234,7 @@ function [newW] = solveWeights(X, W, video, lambda, d)
                         startIndex = (j_tplus-1)*numWeightsPerPixel + ...
                             (i_tplus-1)*numWeightsPerPixel*N + ...
                             (t+1)*numWeightsPerPixel*N*M + 1;
-                        endIndex = startIndex + numWeightsPerPixel;
+                        endIndex = startIndex + numWeightsPerPixel - 1;
                         
                         c = sparse(1, numVariables);
                         c(startIndex:endIndex) = beta;
@@ -239,14 +244,14 @@ function [newW] = solveWeights(X, W, video, lambda, d)
                             (j-1)*numWeightsPerPixel + ...
                             (i-1)*numWeightsPerPixel*N + ...
                             t*numWeightsPerPixel*N*M + 1;
-                        Aineq(index+0, startIndex:endIndex) = -c;
+                        Aineq(index+0, :) = -c;
                         Aineq(index+0, S_index) = -1;
 
-                        Aineq(index+1, startIndex:endIndex) = c;
+                        Aineq(index+1, :) = c;
                         Aineq(index+1, S_index) = -1;
 
-                        b_ineq(index+0) = -b;
-                        b_ineq(index+1) = b;
+                        bineq(index+0) = -b;
+                        bineq(index+1) = b;
                         
                         index = index+1;
                     end
@@ -255,9 +260,21 @@ function [newW] = solveWeights(X, W, video, lambda, d)
         end
     end
     
-    % Now, in theory, we shoudl have to correct constraints to solve the QP
+    % Now, in theory, we shoudl have the correct constraints to solve the QP
     W0 = sparse(1, numVariables);
-    W0(1:numWeights) = cell2mat(W);
+    index = 1;
+    for t = 1:T
+        for i = 1:M
+            for j = 1:N
+                for b = 1:(2*d+1)
+                    for a = 1:(2*d+1)
+                        W0(index) = W{t}(i,j,a,b);
+                        index = index+1;
+                    end
+                end
+            end
+        end
+    end
     [W_hat, fval, exitflag] = cplexqp(H, P, Aineq, bineq, Aeq, beq, W0);
     
     % recover weights cell matrix from output vector
