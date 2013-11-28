@@ -6,3 +6,4 @@
 /docs/*.bak
 /docs/*.blg
 /data/moseg_dataset/
+*.*~
