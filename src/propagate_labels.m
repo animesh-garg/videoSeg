@@ -12,7 +12,7 @@ function [ final_labels ] = propagate_labels( init_label, imSequence, W, params)
 lambda = params.lambda;
 sigma = params.sigma;
 spatial_nbd_size = params.spatial_nbd_size;
-
+nbdSize = (2*spatial_nbd_size+1)^2;
 %% Get cost acc. to appearance model for each frame t in T
 [M,N,T]=size(imSequence); 
 numLabels = T*M*N;
@@ -42,6 +42,9 @@ try
         cplex.addCols(lambda(1)*unaryCost(t,:),[],lb,ub,cType);        
     end
     
+    
+    numAuxVar_SLC = numLabels*(nbdSize^2); %this is BIG of the order of 2^25
+    
     %adding auxiliary variables and constraints for spatial labelling coherence
     for t = 1:T              
         for i = 1: M
@@ -56,7 +59,7 @@ try
                         %add auxiliary variable for spatial labelling coherence
                         cplex.addCols(lambda(2),[], 0,1, 'C');
                         
-                        coeffTemp1= spar
+                        coeffTemp1= sparse
                         cplex.addRows(-inf, coeffTemp1, 0);
                         cplex.addRows(-inf, coeffTemp2, 0);
                         

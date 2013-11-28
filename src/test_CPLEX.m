@@ -22,3 +22,35 @@ cplex.solve();
 fprintf ('Solution value = %f \n', cplex.Solution.objval);
 disp ('Values =');
 disp (cplex.Solution.x);
+
+
+tic
+spmd
+    a = 2; b = 1; c=1;
+   for i = 1:250
+       for j = 1: 250
+           for k = 1:10
+               for l=1:81
+                   a = b+c;
+               end
+           end
+       end
+   end
+end
+
+toc
+
+tic
+
+a = 2; b =1; c=1;
+for i = 1:250
+       for j = 1: 250
+           for k = 1:10
+               for l=1:81
+                   a = b+c;
+               end
+           end
+       end
+   end
+
+toc
