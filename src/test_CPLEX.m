@@ -24,6 +24,8 @@ disp ('Values =');
 disp (cplex.Solution.x);
 
 
+%profiling
+
 tic
 spmd
     a = 2; b = 1; c=1;
