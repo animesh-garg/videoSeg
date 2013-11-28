@@ -43,7 +43,7 @@ function [newW] = solveWeights(X, W, video, lambda, d)
                 for b = (-d):d
                     for a = (-d):d
                         i_tplus = min(max(i+a,1), M);
-                        j_tplus = min(max(j+b,1), M);
+                        j_tplus = min(max(j+b,1), N);
                        
                         P(index) = abs(X_t(i,j) - X_tplus(i_tplus,j_tplus));
                         Q(index) = abs(I_t(i,j,1) - I_tplus(i_tplus,j_tplus,1)) + ...
