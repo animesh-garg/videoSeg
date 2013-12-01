@@ -25,7 +25,7 @@ function [newW] = solveWeights(X, W, video, lambda, d)
     numPixels = (T-1) * numPixelsPerFrame; % no weights for last frame
     numWeightsPerFrame = numWeightsPerPixel * numPixelsPerFrame;
     numWeights = numPixels * numWeightsPerPixel;
-    numAux = (T-2) * numPixelsPerFrame;
+    numAux = (T-2) * numPixelsPerFrame * numWeightsPerPixel;
     numVariables = numWeights + numPixels + numPixels + numAux + numAux;
     
     % T and F costs
@@ -93,10 +93,8 @@ function [newW] = solveWeights(X, W, video, lambda, d)
     % 1. Weights greater than 0
     % 2. Y auxiliary variables are greater that +/- the U flow continuity
     % 3. Z auxiliary variables are greater that +/- the V flow continuity
-    % 4. R auxiliary variables are greater that +/- the U flow momentum
-    % 5. S auxiliary variables are greater that +/- the V flow momentum
-    numInequalityConstraints = numWeights + 2*numPixels + 2*numPixels + ...
-        2*numAux + 2*numAux;
+    numInequalityConstraints = numWeights + 2*numPixels + 2*numPixels;
+       % 2*numAux + 2*numAux;
     Aineq = sparse(numInequalityConstraints, numVariables);
     bineq = sparse(numInequalityConstraints, 1);
     
@@ -190,83 +188,91 @@ function [newW] = solveWeights(X, W, video, lambda, d)
         end
     end
     
-    % Constraint 4 - U momentum constraint
-    for t = 0:(T-2)
-        for i = 1:M
-            for j = 1:N
-                for b = (-d):d
-                    for a = (-d):d
-  
-                        i_tplus = max(min(i+b, M), 1);
-                        j_tplus = max(min(j+a, N), 1);
-                        startIndex = (j_tplus-1)*numWeightsPerPixel + ...
-                            (i_tplus-1)*numWeightsPerPixel*N + ...
-                            (t+1)*numWeightsPerPixel*N*M + 1;
-                        endIndex = startIndex + numWeightsPerPixel - 1;
-                        
-                        c = sparse(1, numVariables);
-                        c(startIndex:endIndex) = alpha;
-                        
-                        R_index = numWeights + 2*numPixels + ...
-                            (a+d) + (b+d)*win + ...
-                            (j-1)*numWeightsPerPixel + ...
-                            (i-1)*numWeightsPerPixel*N + ...
-                            t*numWeightsPerPixel*N*M + 1;
-                        Aineq(index+0, :) = -c;
-                        Aineq(index+0, R_index) = -1;
-
-                        Aineq(index+1, :) = c;
-                        Aineq(index+1, R_index) = -1;
-
-                        bineq(index+0) = -a;
-                        bineq(index+1) = a;
-                        
-                        index = index+2;
-                    end
-                end
-            end
-        end
-    end
+    % Quadratic constraints
+    % 1. U component of momentum constraints
+    % 2. V component of momentum constraints
+%     numQuadraticConstraints = numAux + numAux;
+%        % 2*numAux + 2*numAux;
+%     quadStruct = [];
+%     
+%     % Constraint 1 - U momentum constraint
+%     index = 1;
+%     for t = 0:(T-2)
+%         for i = 1:M
+%             for j = 1:N
+%                 for b = (-d):d
+%                     for a = (-d):d
+%                         W_index = (a+d) + (b+d)*win + ...
+%                             (j-1)*numWeightsPerPixel + ...
+%                             (i-1)*numWeightsPerPixel*N + ...
+%                             t*numWeightsPerPixel*N*M + 1;
+%                         R_index = numWeights + 2*numPixels + ...
+%                             W_index;
+%                         c = sparse(1, numVariables);
+%                         c(1, W_index) = a;
+%                         c(1, R_index) = -1;
+%                         
+%                         
+%                         i_tplus = safeIndex(i, b, M);
+%                         j_tplus = safeIndex(j, a, N);
+%                         startIndex = (j_tplus-1)*numWeightsPerPixel + ...
+%                             (i_tplus-1)*numWeightsPerPixel*N + ...
+%                             (t+1)*numWeightsPerPixel*N*M + 1;
+%                         endIndex = startIndex + numWeightsPerPixel - 1;
+%                         
+%                         A = sparse(numVariables, numVariables);
+%                         A(W_index, startIndex:endIndex) = alpha;
+%                         A(startIndex:endIndex, W_index) = alpha';
+%                         
+%                         quadStruct(index).Q = A;
+%                         quadStruct(index).a = c;
+%                         quadStruct(index).rhs = 0;
+%                         index = index+1;
+%                     end
+%                 end
+%             end
+%         end
+%     end
     
     % Constraint 5 - V momentum constraint
-    for t = 0:(T-2)
-        for i = 1:M
-            for j = 1:N
-                for b = (-d):d
-                    for a = (-d):d
-  
-                        i_tplus = max(min(i+b, M), 1);
-                        j_tplus = max(min(j+a, N), 1);
-                        startIndex = (j_tplus-1)*numWeightsPerPixel + ...
-                            (i_tplus-1)*numWeightsPerPixel*N + ...
-                            (t+1)*numWeightsPerPixel*N*M + 1;
-                        endIndex = startIndex + numWeightsPerPixel - 1;
-                        
-                        c = sparse(1, numVariables);
-                        c(startIndex:endIndex) = beta;
-                        
-                        S_index = numWeights + 2*numPixels + numAux + ...
-                            (a+d) + (b+d)*win + ...
-                            (j-1)*numWeightsPerPixel + ...
-                            (i-1)*numWeightsPerPixel*N + ...
-                            t*numWeightsPerPixel*N*M + 1;
-                        Aineq(index+0, :) = -c;
-                        Aineq(index+0, S_index) = -1;
-
-                        Aineq(index+1, :) = c;
-                        Aineq(index+1, S_index) = -1;
-
-                        bineq(index+0) = -b;
-                        bineq(index+1) = b;
-                        
-                        index = index+2;
-                    end
-                end
-            end
-        end
-    end
+%     for t = 0:(T-2)
+%         for i = 1:M
+%             for j = 1:N
+%                 for b = (-d):d
+%                     for a = (-d):d
+%   
+%                         i_tplus = max(min(i+b, M), 1);
+%                         j_tplus = max(min(j+a, N), 1);
+%                         startIndex = (j_tplus-1)*numWeightsPerPixel + ...
+%                             (i_tplus-1)*numWeightsPerPixel*N + ...
+%                             (t+1)*numWeightsPerPixel*N*M + 1;
+%                         endIndex = startIndex + numWeightsPerPixel - 1;
+%                         
+%                         c = sparse(1, numVariables);
+%                         c(startIndex:endIndex) = beta;
+%                         
+%                         S_index = numWeights + 2*numPixels + numAux + ...
+%                             (a+d) + (b+d)*win + ...
+%                             (j-1)*numWeightsPerPixel + ...
+%                             (i-1)*numWeightsPerPixel*N + ...
+%                             t*numWeightsPerPixel*N*M + 1;
+%                         Aineq(index+0, :) = -c;
+%                         Aineq(index+0, S_index) = -1;
+% 
+%                         Aineq(index+1, :) = c;
+%                         Aineq(index+1, S_index) = -1;
+% 
+%                         bineq(index+0) = -b;
+%                         bineq(index+1) = b;
+%                         
+%                         index = index+2;
+%                     end
+%                 end
+%             end
+%         end
+%     end
     
-    % Now, in theory, we shoudl have the correct constraints to solve the QP
+    % Now, in theory, we should have the correct constraints to solve the QP
     W0 = sparse(1, numVariables);
     index = 1;
     for t = 1:(T-1)
@@ -282,26 +288,27 @@ function [newW] = solveWeights(X, W, video, lambda, d)
         end
     end
 
-%     [W_hat, fval, exitflag] = cplexlp(P, Aineq, bineq, Aeq, beq, ...
-%         [], [], W0);
-     [W_hat, fval, exitflag] = cplexqp(H, P, Aineq, bineq, Aeq, beq, ...
+    [W_hat, fval, exitflag] = cplexlp(P, Aineq, bineq, Aeq, beq, ...
          [], [], W0);
+%      [W_hat, fval, exitflag] = cplexqp(H, P, Aineq, bineq, Aeq, beq, ...
+%          [], [], W0);
     
     % recover weights cell matrix from output vector
     newW = cell(1,video.T);
-    startIndex = 1;
-    endIndex = startIndex + numWeightsPerFrame;
+    index = 1;
     for t = 1:(T-1)
-        newW{t} = W_hat(startIndex:endIndex);
-        startIndex = endIndex + 1;
-        endIndex = startIndex + numWeightsPerFrame;
+        newW{t} = zeros(M, N, win, win); 
+        for i = 1:M
+            for j = 1:N
+                for b = 1:win
+                    for a = 1:win
+                        newW{t}(i, j, b, a) = W_hat(index);
+                        index = index+1;
+                    end
+                end
+            end
+        end
     end
     newW{T} = W{T};
-    
-    for i = 1:numPixels
-       if W_hat((i-1)*numWeightsPerPixel+1) ~= 0
-           fprintf('Error!\n');
-       end
-    end
 end
 
