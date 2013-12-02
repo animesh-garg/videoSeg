@@ -5,5 +5,10 @@
 /docs/*.bbl
 /docs/*.bak
 /docs/*.blg
+<<<<<<< HEAD
 /data/moseg_dataset
 /data/
+=======
+/data/moseg_dataset/
+*.*~
+>>>>>>> a433143f9c68427cfd80cd4ffbc06c9ef709ab06
