@@ -1,7 +1,7 @@
-function [videoStruct] = genSimpleTestVideo()
+function [videoStruct, T] = genSimpleTestVideo()
     T = 3;
-    m = 7;
-    n = 7;
+    m = 5;
+    n = 5;
     % generate simple test video in grayscale
     
     videoStruct = struct;
