@@ -32,12 +32,14 @@ end
 
 %% Training Classifier
 forest = forestTrain(data, labels, pTrain{:});
+disp('Trained Classfier')
 
 %% Computing Costs
 cost = cell(T,1);
-cost{1} = ones(ydim,xdim)-X1;
+cost{1} = ones(ydim,xdim)-double(X1);
 
 for t=2:T
+    fprintf ('Processing frame number %d of %d \r', t,T);
     frame = zeros(ydim+2*w,xdim+2*w,C);
     frame(w+1:ydim+w,w+1:xdim+w,:) = double(I{t});
     data = zeros(ydim*xdim,C*(2*w+1)^2);
