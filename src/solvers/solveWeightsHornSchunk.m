@@ -1,4 +1,4 @@
-function [newW] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d)
+function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, debug)
 %SOLVE_WEIGHT_AVG_MOMENTUM Solve for the flow weights given a pixel labeling (using
 % cplex) with average momentum constraint
 % The variable we end up optimizing is W_hat = [W Y Z R S]', where
@@ -22,67 +22,87 @@ function [newW] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d)
     c = size(video.I, 3);
     numPixelsPerFrame = M * N;
     numFlowsPerFrame = 2*numPixelsPerFrame;
+    numPixels = (T-1) * numPixelsPerFrame;
     numFlows= (T-1) * numFlowsPerFrame; % no weights for last frame
-    numMomentum = 2 * (T-2) * numPixelsPerFrame;
-    numVariables = 4*numFlows + c*numFlows + 2*numMomentum;
+    numMomentum = (T-2) * numPixelsPerFrame;
+    numVariables = numFlows + numPixels + c*numPixels + numFlows + ...
+        2*numMomentum;
+    numVariableTypes = 8;
 
+    % create double versions of images
+    I = cell(T);
+    for t = 1:T
+       I{t} = double(video.I{t}); 
+    end
+    
     disp('Creating linear costs');
     
+    startIndices = zeros(numVariableTypes,1);
+    startIndices(1) = 1;                            % U
+    startIndices(2) = startIndices(1) + numPixels;  % V
+    startIndices(3) = startIndices(2) + numPixels;  % P
+    startIndices(4) = startIndices(3) + numPixels;  % Q
+    startIndices(5) = startIndices(4) + numPixels;  % Y
+    startIndices(6) = startIndices(5) + numPixels;  % Z
+    startIndices(7) = startIndices(6) + numPixels;  % R
+    startIndices(8) = startIndices(7) + numMomentum;% S
+    
     % T cost - create vector to sum auxiliary first order label constancy variables
-    T = zeros(numVariables,1);
-    T((numFlows+1):(2*numFlows)) = ones(numFlows,1);
-    T = sparse(T);
+    L = zeros(numVariables,1);
+    L(startIndices(3):startIndices(4)-1) = lambda(3) * ones(numPixels,1); % P summation
+    L(startIndices(4):startIndices(5)-1) = lambda(4) * ones(numPixels,1); % Q summation (grayscale only for now)
+    L(startIndices(5):startIndices(6)-1) = lambda(5) * ones(numPixels,1);  % Y summation
+    L(startIndices(6):startIndices(7)-1) = lambda(5) * ones(numPixels,1);  % Z summation
+    L(startIndices(7):startIndices(8)-1) = lambda(6) * ones(numMomentum,1); % R summation
+    L(startIndices(8):numVariables) = lambda(6) * ones(numMomentum,1); % S summation
+    L = sparse(L);
     
-    % F cost - create vector to sum auxiliary first order image intensity constancy variables
-    F = zeros(numVariables,1);
-    F((2*numFlows+1):(3*numFlows)) = ones(numFlows,1); % grayscale only for now
-    F = sparse(F);
-    
-    % C cost - create vector to sum auxiliary flow difference variables
-    C = zeros(numVariables,1);
-    C((3*numFlows+1):(5*numFlows)) = ones(2*numFlows,1);
-    C = sparse(C);
-    
-    % M cost - create vector to sum auxiliary momentum variables
-    H = zeros(numVariables,1);
-    H((5*numFlows+1):numVariables) = ones(2*numMomentum,1);
-    H = sparse(H);
-
-    T = lambda(3)*T + lambda(4)*F + lambda(5)*C + lambda(6)*H; % final linear cost term
-    
+    H = lambda(7)*eye(numVariables);
+   
     % Inequality constraints
     % 1. P auxiliary variables are +/- the spatial similarity (for the
-    % label image)
+    % label image) - Horn-Shunk method
     % 2. Q auxiliary variables are +/- the spatial similarity (for the
-    % intensity / color image)
+    % intensity / color image) - Horn-Shunk method
     % 2. Y auxiliary variables are greater than +/- the U flow continuity
     % 3. Z auxiliary variables are greater than +/- the V flow continuity
     % 4. R auxiliary variables are greater than +/- the U avg flow diff
     % between frames
     % 5. S auxiliary variables are greater than +/- the V avg flow diff
     % between frames
+    % 6. Lower bound on UV vars
+    % 7. Upper bound on UV vars
     disp('Generating inequality constraints');
-    numInequalityConstraints = 2*(6*numPixels);
+    numInequalityConstraints = 2*(2*numPixels) + 2*(4*numFlows) + 2*numFlows;
     Aineq = zeros(numInequalityConstraints, numVariables);
     bineq = zeros(numInequalityConstraints, 1);
     
     % helper functions for indexing into the arrays
-    linearIndex = @(i,j,t) ((j-1) + 2*(i-1)*N + 2*(t-1)*M*N + 1);
-    linearUIndex = @(i,j,t) ((j-1) + 2*(i-1)*N + 2*(t-1)*M*N + 1);
-    linearVIndex = @(i,j,t) ((j-1+N) + 2*(i-1)*N + 2*(t-1)*M*N + 1);
+    linearIndex = @(i,j,t) ((j-1) + (i-1)*N + (t-1)*M*N + 1);
+    linearUIndex = @(i,j,t) (startIndices(1) + linearIndex(i,j,t) - 1);
+    linearVIndex = @(i,j,t) (startIndices(2) + linearIndex(i,j,t) - 1);
+    linearPIndex = @(i,j,t) (startIndices(3) + linearIndex(i,j,t) - 1);
+    linearQIndex = @(i,j,t) (startIndices(4) + linearIndex(i,j,t) - 1);
+    linearYIndex = @(i,j,t) (startIndices(5) + linearIndex(i,j,t) - 1);
+    linearZIndex = @(i,j,t) (startIndices(6) + linearIndex(i,j,t) - 1);
+    linearRIndex = @(i,j,t) (startIndices(7) + linearIndex(i,j,t) - 1);
+    linearSIndex = @(i,j,t) (startIndices(8) + linearIndex(i,j,t) - 1);
        
     % Constraint 1 - P label similarity constraint
     disp('Generating inequality constraint 1');
-    index = 1;  
+    index = 1;
     for t = 1:(T-1)
         [labelGradientX, labelGradientY] = imgradientxy(X{t});
         for i = 1:M
             for j = 1:N
-                pixelLinearIndex = linearIndex(i,j,t);
                 U_index = linearUIndex(i,j,t);
                 V_index = linearVIndex(i,j,t);
-                P_index = numFlows+pixelLinearIndex;
+                P_index = linearPIndex(i,j,t);
                 labelGradientT = X{t+1}(i,j) - X{t}(i,j);
+                
+                if i ==5 && j == 5
+                   test = 1; 
+                end
                 
                 % add positive inequality constraint
                 Aineq(index+0, U_index) = labelGradientX(i,j);
@@ -103,28 +123,31 @@ function [newW] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d)
     
     % Constraint 2 - Q image intensity similarity constraint
     disp('Generating inequality constraint 2');
-    index = 1;  
     for t = 1:(T-1)
-        [imGradientX, imGradientY] = imgradientxy(video.I{t});
+        [imGradientX, imGradientY] = imgradientxy(I{t});
         for i = 1:M
             for j = 1:N
-                pixelLinearIndex = linearIndex(i,j,t);
                 U_index = linearUIndex(i,j,t);
                 V_index = linearVIndex(i,j,t);
-                Q_index = 2*numFlows + pixelLinearIndex;
-                imGradientT = video.I{t+1}(i,j) - video.I{t}(i,j);
+                Q_index = linearQIndex(i,j,t);
+                imGradientT = I{t+1}(i,j) - I{t}(i,j);
+                
+                if i == 5 && j == 5
+                   sdaf = 1; 
+                end
                 
                 % add positive inequality constraint
-                Aineq(index+0, U_index) = imGradientX(i,j);
-                Aineq(index+0, V_index) = imGradientY(i,j);
+                g = 1.0;% / double(max(max(I{t})));
+                Aineq(index+0, U_index) = g*imGradientX(i,j);
+                Aineq(index+0, V_index) = g*imGradientY(i,j);
                 Aineq(index+0, Q_index) = -1;
-                bineq(index+0) = -imGradientT;
+                bineq(index+0) = -g*imGradientT;
                 
                 % add negative inequality constraint
-                Aineq(index+1, U_index) = -imGradientX(i,j);
-                Aineq(index+1, V_index) = -imGradientY(i,j);
+                Aineq(index+1, U_index) = -g*imGradientX(i,j);
+                Aineq(index+1, V_index) = -g*imGradientY(i,j);
                 Aineq(index+1, Q_index) = -1;
-                bineq(index+1) = imGradientT;
+                bineq(index+1) = g*imGradientT;
 
                 index = index+2;
             end
@@ -133,8 +156,6 @@ function [newW] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d)
     
     % Constraint 3 - Y - U spatial consistency constraint
     disp('Generating inequality constraint 3');
-    startIndex = 1;
-    endIndex = startIndex + numFlows - 1;
     for t = 1:(T-1)
         for i = 1:M
             for j = 1:N
@@ -152,19 +173,19 @@ function [newW] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d)
                     ones(yInterval, xInterval);
                 avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
                 g = zeros(1, numVariables);
-                g((t*numFlowsPerFrame+1):((t+1)*numFlowsPerFrame-numPixelsPerFrame)) = ...
-                    avgFilter;
+                startIndex = linearUIndex(1,1,t);
+                endIndex = linearUIndex(1,1,t+1)-1;
+                g(startIndex:endIndex) = avgFilter;
                 
-                pixelLinearIndex = linearIndex(i,j,t);
                 U_index = linearUIndex(i,j,t);
-                Y_index = 3*numFlows + pixelLinearIndex;
+                Y_index = linearYIndex(i,j,t);
                 
                 Aineq(index+0, :) = -g;
-                Aineq(index+0, U_index) = 1;
+                Aineq(index+0, U_index) = Aineq(index+0, U_index) + 1;
                 Aineq(index+0, Y_index) = -1;
                 
                 Aineq(index+1, :) = g;
-                Aineq(index+1, U_index) = -1;
+                Aineq(index+1, U_index) = Aineq(index+1, U_index) - 1;
                 Aineq(index+1, Y_index) = -1;
 
                 index = index+2;
@@ -174,8 +195,6 @@ function [newW] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d)
     
     % Constraint 4 - Z - V spatial consistency constraint
     disp('Generating inequality constraint 4');
-    startIndex = 1;
-    endIndex = startIndex + numFlows - 1;
     for t = 1:(T-1)
         for i = 1:M
             for j = 1:N
@@ -192,20 +211,21 @@ function [newW] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d)
                 avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
                     ones(yInterval, xInterval);
                 avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
-                g = zeros(1, numVariables);
-                g((t*numFlowsPerFrame+numPixelsPerFrame+1):((t+1)*numFlowsPerFrame)) = ...
-                    avgFilter;
                 
-                pixelLinearIndex = linearIndex(i,j,t);
+                g = zeros(1, numVariables);
+                startIndex = linearVIndex(1,1,t);
+                endIndex = linearVIndex(1,1,t+1)-1;
+                g(startIndex:endIndex) = avgFilter;
+                
                 V_index = linearVIndex(i,j,t);
-                Z_index = 4*numFlows + pixelLinearIndex;
+                Z_index = linearZIndex(i,j,t);
                 
                 Aineq(index+0, :) = -g;
-                Aineq(index+0, V_index) = 1;
+                Aineq(index+0, V_index) = Aineq(index+0, V_index) + 1;
                 Aineq(index+0, Z_index) = -1;
                 
                 Aineq(index+1, :) = g;
-                Aineq(index+1, V_index) = -1;
+                Aineq(index+1, V_index) = Aineq(index+1, V_index) - 1;
                 Aineq(index+1, Z_index) = -1;
 
                 index = index+2;
@@ -214,9 +234,7 @@ function [newW] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d)
     end
     
     % Constraint 5 - R - U momentum constraint
-    disp('Generating inequality constraint 4');
-    startIndex = 1;
-    endIndex = startIndex + numWeightsPerPixel - 1;
+    disp('Generating inequality constraint 5');
     for t = 1:(T-2)
         for i = 1:M
             for j = 1:N
@@ -229,19 +247,20 @@ function [newW] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d)
                 yInterval = endY-startY+1;
                 nSummed = xInterval*yInterval;
                 
-                avgFilter = zeros(M, numWeightsPerPixel*N);
+                avgFilter = zeros(M, N);
                 avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
-                    repmat(alpha, [yInterval xInterval]);
+                    ones(yInterval, xInterval);
                 avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
 
                 g = zeros(1, numVariables);
-                g((t*numFlowsPerFrame+1):((t+1)*numFlowsPerFrame-numPixelsPerFrame)) = ... 
-                    avgFilter;
-                g(((t+1)*numFlowsPerFrame+1):((t+2)*numFlowsPerFrame-numPixelsPerFrame)) = ...
-                    -avgFilter;
-
-                pixelLinearIndex = linearIndex(i,j,t);
-                R_index = 5*numPixels + pixelLinearIndex;
+                startIndex = linearUIndex(1,1,t);
+                endIndex = linearUIndex(1,1,t+1)-1;
+                g(startIndex:endIndex) = avgFilter;
+                startIndex = linearUIndex(1,1,t+1);
+                endIndex = linearUIndex(1,1,t+2)-1;
+                g(startIndex:endIndex) = -avgFilter;
+                
+                R_index = linearRIndex(i,j,t);               
                 
                 Aineq(index+0, :) = g;
                 Aineq(index+0, R_index) = -1;
@@ -256,8 +275,6 @@ function [newW] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d)
     
     % Constraint 6 - S - V momentum constraint
     disp('Generating inequality constraint 6');
-    startIndex = 1;
-    endIndex = startIndex + numWeightsPerPixel - 1;
     for t = 1:(T-2)
         for i = 1:M
             for j = 1:N
@@ -270,36 +287,98 @@ function [newW] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d)
                 yInterval = endY-startY+1;
                 nSummed = xInterval*yInterval;
                 
-                avgFilter = zeros(M, numWeightsPerPixel*N);
+                avgFilter = zeros(M, N);
                 avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
-                    repmat(alpha, [yInterval xInterval]);
+                    ones(yInterval, xInterval);
                 avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
 
                 g = zeros(1, numVariables);
-                g((t*numFlowsPerFrame+numPixelsPerFrame+1):((t+1)*numFlowsPerFrame)) = ... 
-                    avgFilter;
-                g(((t+1)*numFlowsPerFrame+numPixelsPerFrame+1):((t+2)*numFlowsPerFrame)) = ...
-                    -avgFilter;
+                startIndex = linearVIndex(1,1,t);
+                endIndex = linearVIndex(1,1,t+1)-1;
+                g(startIndex:endIndex) = avgFilter;
+                startIndex = linearVIndex(1,1,t+1);
+                endIndex = linearVIndex(1,1,t+2)-1;
+                g(startIndex:endIndex) = -avgFilter;
 
-                pixelLinearIndex = linearIndex(i,j,t);
-                R_index = 6*numPixels + pixelLinearIndex;
+                S_index = linearSIndex(i,j,t);               
                 
                 Aineq(index+0, :) = g;
-                Aineq(index+0, R_index) = -1;
+                Aineq(index+0, S_index) = -1;
                 
                 Aineq(index+1, :) = -g;
-                Aineq(index+1, R_index) = -1;
+                Aineq(index+1, S_index) = -1;
 
                 index = index+2;
             end
         end
-    end  
+    end 
+    
+    % Constraints 7,8 - Lower/upper bounds on UV
+    disp('Generating inequality constraint 7');
+    startIndex = index;
+    endIndex = startIndex + numFlows - 1;
+    Aineq(startIndex:endIndex, 1:numFlows) = eye(numFlows);
+    bineq(startIndex:endIndex) = d*ones(numFlows,1);
+    index = index + numFlows + 1;
+    
+    disp('Generating inequality constraint 8');
+    startIndex = index;
+    endIndex = startIndex + numFlows - 1;
+    Aineq(startIndex:endIndex,1:numFlows) = -eye(numFlows);
+    bineq(startIndex:endIndex) = d*ones(numFlows,1);
+    index = index + numFlows + 1;
+    
     Aineq = sparse(Aineq);
     bineq = sparse(bineq);
 
     disp('Solving linear program');
-    [newUV, fval, exitflag] = cplexlp(T, Aineq, bineq, Aeq, beq, ...
-          [], [], W0);
+    [newUV, fval, exitflag, output] = cplexqp(H, L, Aineq, bineq, [], []);%, ...
+          %[], [], W0);
+    
+    if debug
+        i = 6;
+        j = 6;
+        t = 1;
+        ui = linearUIndex(i,j,t);
+        vi = linearVIndex(i,j,t);
+        pi = linearPIndex(i,j,t);
+        qi = linearQIndex(i,j,t);
+        yi = linearYIndex(i,j,t);
+        u = newUV(ui);
+        v = newUV(vi);
+        p = newUV(pi);
+        q = newUV(qi);
+        y = newUV(yi);
+        Xt = X{t+1}(i,j) - X{t}(i,j);
+        [Xxp, Xyp] = imgradientxy(X{t});
+        Xx = Xxp(i,j);
+        Xy = Xyp(i,j);
+        It = I{t+1}(i,j) - I{t}(i,j);
+        [Ixp, Iyp] = imgradientxy(I{t});
+        Ix = Ixp(i,j);
+        Iy = Iyp(i,j);
+        test = 1;
+    end
+          
+    % recover flows cell matrix from output vector
+    newU = cell(1,T);
+    newV = cell(1,T);
+    index = 1;
+    for t = 1:(T-1)
+        newU{t} = zeros(M, N); 
+        newV{t} = zeros(M, N); 
+        for i = 1:M
+            for j = 1:N
+                % here we assume all t of U come before all t of V,
+                % but above its U,V alternating!
+                newU{t}(i, j) = newUV(startIndices(1)+index-1);
+                newV{t}(i, j) = newUV(startIndices(2)+index-1);
+                index = index+1;
+            end
+        end
+    end
+    newU{T} = U{T};
+    newV{T} = V{T};
 end
 
 
