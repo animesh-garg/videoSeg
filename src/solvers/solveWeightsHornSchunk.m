@@ -1,4 +1,4 @@
-function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, debug)
+function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, useL2Penalty, debug)
 %SOLVE_WEIGHT_AVG_MOMENTUM Solve for the flow weights given a pixel labeling (using
 % cplex) with average momentum constraint
 % The variable we end up optimizing is W_hat = [W Y Z R S]', where
@@ -57,7 +57,10 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, deb
     L(startIndices(8):numVariables) = lambda(6) * ones(numMomentum,1); % S summation
     L = sparse(L);
     
-    H = lambda(7)*eye(numVariables);
+    H = [];
+    if useL2Penalty
+        lambda(7)*eye(numVariables);
+    end
    
     % Inequality constraints
     % 1. P auxiliary variables are +/- the spatial similarity (for the
@@ -331,9 +334,15 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, deb
     Aineq = sparse(Aineq);
     bineq = sparse(bineq);
 
-    disp('Solving linear program');
-    [newUV, fval, exitflag, output] = cplexqp(H, L, Aineq, bineq, [], []);%, ...
+    if useL2Penalty
+        disp('Solving quadratic program');
+        [newUV, fval, exitflag, output] = cplexqp(H, L, Aineq, bineq, [], []);%, ...
           %[], [], W0);
+    else
+        disp('Solving linear program');
+        [newUV, fval, exitflag, output] = cplexlp(L, Aineq, bineq, [], []);%, ...
+          %[], [], W0);
+    end
     
     if debug
         i = 6;
