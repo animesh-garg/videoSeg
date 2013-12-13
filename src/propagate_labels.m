@@ -7,6 +7,7 @@ function [ final_labels ] = propagate_labels( init_label, imSequence, W, params)
 %   imSequence: sequence of image of length T
 %   T: number of time steps in future for prediction. (parameter)
 %   W: weights 
+%   params: parameters values for the current iteration
 
 %% Get parameter values
 lambda = params.lambda;
@@ -24,11 +25,17 @@ else
     threshEPS = 0.5 ; %Assign some useful Value ToDO
 end
 
+% If video sequence is multidim matrix
 [M,N,T]=size(imSequence);
+
+% if videosequence is a cell array
+T = length(imSequence.I);
+[M,N] = size(imSequence.I{1});
+
 
 %% Get cost acc. to appearance model for each frame t in T 
 % gets costs
-C = getUnaryPotential(imSequence, init_label, threshEPS);
+C = getUnaryCosts(imSequence, init_label, threshEPS);
 
 % rewrite Cost matrix C(T,M,N) into C(T, M*N)
 unaryCost = reshape(C,T, M*N);
@@ -228,10 +235,29 @@ try
         
 %% Call Cplex Solver
     cplex.solve()
+    
+    
+    % Write the solution
+    fprintf('\nSolution status = %s\n',cplex.Solution.statusstring);
+    fprintf('\nSolution Time = %d\n', cplex.Solution.time);
+    fprintf('Solution value = %f\n',cplex.Solution.objval);
+    
+    opt_sol = cplex.Solution.x;        
 
 catch m
     throw (m);
+    disp(m.message);
 
+%% read results
+% only the first T*M*N variable are the labels
+final_labels = cell (1,T);
+
+%final_labels{1} = reshape(opt_sol(1:M*N)', M, N); 
+for t = 0: T-1
+   final_labels{t+1} = reshape(opt_sol ((t*M*N +1) : (t+1)*M*N)', M,N);  
+end
+    
+    
 end
 
 end
