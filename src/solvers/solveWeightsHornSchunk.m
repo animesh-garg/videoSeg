@@ -37,6 +37,7 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
     
     disp('Creating linear costs');
     
+    % Compute all of the start indices
     startIndices = zeros(numVariableTypes,1);
     startIndices(1) = 1;                            % U
     startIndices(2) = startIndices(1) + numPixels;  % V
@@ -47,7 +48,7 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
     startIndices(7) = startIndices(6) + numPixels;  % R
     startIndices(8) = startIndices(7) + numMomentum;% S
     
-    % T cost - create vector to sum auxiliary first order label constancy variables
+    % Create cost vector to sum up the auxiliary variables
     L = zeros(numVariables,1);
     L(startIndices(3):startIndices(4)-1) = lambda(3) * ones(numPixels,1); % P summation
     L(startIndices(4):startIndices(5)-1) = lambda(4) * ones(numPixels,1); % Q summation (grayscale only for now)
@@ -57,9 +58,10 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
     L(startIndices(8):numVariables) = lambda(6) * ones(numMomentum,1); % S summation
     L = sparse(L);
     
+    % create diagonal quadratic penalty if specified
     H = [];
     if useL2Penalty
-        lambda(7)*eye(numVariables);
+        H = lambda(7)*eye(numVariables);
     end
    
     % Inequality constraints
@@ -93,7 +95,7 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
        
     % Constraint 1 - P label similarity constraint
     disp('Generating inequality constraint 1');
-    index = 1;
+    index = 1; % keeps track of the current constraint for ease of coding
     for t = 1:(T-1)
         [labelGradientX, labelGradientY] = imgradientxy(X{t});
         for i = 1:M
@@ -102,10 +104,6 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
                 V_index = linearVIndex(i,j,t);
                 P_index = linearPIndex(i,j,t);
                 labelGradientT = X{t+1}(i,j) - X{t}(i,j);
-                
-                if i ==5 && j == 5
-                   test = 1; 
-                end
                 
                 % add positive inequality constraint
                 Aineq(index+0, U_index) = labelGradientX(i,j);
@@ -135,12 +133,8 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
                 Q_index = linearQIndex(i,j,t);
                 imGradientT = I{t+1}(i,j) - I{t}(i,j);
                 
-                if i == 5 && j == 5
-                   sdaf = 1; 
-                end
-                
                 % add positive inequality constraint
-                g = 1.0;% / double(max(max(I{t})));
+                g = 1.0; % constant to normalize image gradients (NOT USED)
                 Aineq(index+0, U_index) = g*imGradientX(i,j);
                 Aineq(index+0, V_index) = g*imGradientY(i,j);
                 Aineq(index+0, Q_index) = -1;
@@ -171,23 +165,28 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
                 yInterval = endY-startY+1;
                 nSummed = xInterval*yInterval;
                 
+                % build an averaging filter by first putting the summation
+                % window into the location in the image and then reshaping
+                % to match the size of the variable vector 
                 avgFilter = zeros(M, N);
                 avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
                     ones(yInterval, xInterval);
                 avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
-                g = zeros(1, numVariables);
+                
+                avgFilterAllVariables = zeros(1, numVariables);
                 startIndex = linearUIndex(1,1,t);
                 endIndex = linearUIndex(1,1,t+1)-1;
-                g(startIndex:endIndex) = avgFilter;
+                avgFilterAllVariables(startIndex:endIndex) = avgFilter;
                 
                 U_index = linearUIndex(i,j,t);
                 Y_index = linearYIndex(i,j,t);
                 
-                Aineq(index+0, :) = -g;
+                % place vectors into inequality matrices
+                Aineq(index+0, :) = -avgFilterAllVariables;
                 Aineq(index+0, U_index) = Aineq(index+0, U_index) + 1;
                 Aineq(index+0, Y_index) = -1;
                 
-                Aineq(index+1, :) = g;
+                Aineq(index+1, :) = avgFilterAllVariables;
                 Aineq(index+1, U_index) = Aineq(index+1, U_index) - 1;
                 Aineq(index+1, Y_index) = -1;
 
@@ -210,24 +209,28 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
                 yInterval = endY-startY+1;
                 nSummed = xInterval*yInterval;
                 
+                % build an averaging filter by first putting the summation
+                % window into the location in the image and then reshaping
+                % to match the size of the variable vector 
                 avgFilter = zeros(M, N);
                 avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
                     ones(yInterval, xInterval);
                 avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
                 
-                g = zeros(1, numVariables);
+                avgFilterAllVariables = zeros(1, numVariables);
                 startIndex = linearVIndex(1,1,t);
                 endIndex = linearVIndex(1,1,t+1)-1;
-                g(startIndex:endIndex) = avgFilter;
+                avgFilterAllVariables(startIndex:endIndex) = avgFilter;
                 
                 V_index = linearVIndex(i,j,t);
                 Z_index = linearZIndex(i,j,t);
-                
-                Aineq(index+0, :) = -g;
+               
+                % place vectors into inequality matrices
+                Aineq(index+0, :) = -avgFilterAllVariables;
                 Aineq(index+0, V_index) = Aineq(index+0, V_index) + 1;
                 Aineq(index+0, Z_index) = -1;
                 
-                Aineq(index+1, :) = g;
+                Aineq(index+1, :) = avgFilterAllVariables;
                 Aineq(index+1, V_index) = Aineq(index+1, V_index) - 1;
                 Aineq(index+1, Z_index) = -1;
 
@@ -250,25 +253,31 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
                 yInterval = endY-startY+1;
                 nSummed = xInterval*yInterval;
                 
+                % build an averaging filter by first putting the summation
+                % window into the location in the image and then reshaping
+                % to match the size of the variable vectors
                 avgFilter = zeros(M, N);
                 avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
                     ones(yInterval, xInterval);
                 avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
 
-                g = zeros(1, numVariables);
+                % put the filter in the variable range for times t and t+1
+                % since we want to compute the temporal derivatives
+                avgFilterAllVariables = zeros(1, numVariables);
                 startIndex = linearUIndex(1,1,t);
                 endIndex = linearUIndex(1,1,t+1)-1;
-                g(startIndex:endIndex) = avgFilter;
+                avgFilterAllVariables(startIndex:endIndex) = avgFilter;
                 startIndex = linearUIndex(1,1,t+1);
                 endIndex = linearUIndex(1,1,t+2)-1;
-                g(startIndex:endIndex) = -avgFilter;
+                avgFilterAllVariables(startIndex:endIndex) = -avgFilter;
                 
                 R_index = linearRIndex(i,j,t);               
                 
-                Aineq(index+0, :) = g;
+                % update inequalities
+                Aineq(index+0, :) = avgFilterAllVariables;
                 Aineq(index+0, R_index) = -1;
                 
-                Aineq(index+1, :) = -g;
+                Aineq(index+1, :) = -avgFilterAllVariables;
                 Aineq(index+1, R_index) = -1;
 
                 index = index+2;
@@ -290,25 +299,30 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
                 yInterval = endY-startY+1;
                 nSummed = xInterval*yInterval;
                 
+                % build an averaging filter by first putting the summation
+                % window into the location in the image and then reshaping
+                % to match the size of the variable vectors
                 avgFilter = zeros(M, N);
                 avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
                     ones(yInterval, xInterval);
                 avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
 
-                g = zeros(1, numVariables);
+                % put the filter in the variable range for times t and t+1
+                % since we want to compute the temporal derivatives
+                avgFilterAllVariables = zeros(1, numVariables);
                 startIndex = linearVIndex(1,1,t);
                 endIndex = linearVIndex(1,1,t+1)-1;
-                g(startIndex:endIndex) = avgFilter;
+                avgFilterAllVariables(startIndex:endIndex) = avgFilter;
                 startIndex = linearVIndex(1,1,t+1);
                 endIndex = linearVIndex(1,1,t+2)-1;
-                g(startIndex:endIndex) = -avgFilter;
+                avgFilterAllVariables(startIndex:endIndex) = -avgFilter;
 
                 S_index = linearSIndex(i,j,t);               
                 
-                Aineq(index+0, :) = g;
+                Aineq(index+0, :) = avgFilterAllVariables;
                 Aineq(index+0, S_index) = -1;
                 
-                Aineq(index+1, :) = -g;
+                Aineq(index+1, :) = -avgFilterAllVariables;
                 Aineq(index+1, S_index) = -1;
 
                 index = index+2;
@@ -334,30 +348,46 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
     Aineq = sparse(Aineq);
     bineq = sparse(bineq);
 
+    % Create the estimated flow vector
+    UV_init = zeros(numVariables, 1);
+    for t = 1:(T-2)
+        for i = 1:M
+            for j = 1:N
+                U_index = linearUIndex(i,j,t);
+                V_index = linearVIndex(i,j,t);
+                UV_init(U_index) = U{t}(i,j);
+                UV_init(V_index) = V{t}(i,j);
+            end
+        end
+    end
+    
     if useL2Penalty
         disp('Solving quadratic program');
-        [newUV, fval, exitflag, output] = cplexqp(H, L, Aineq, bineq, [], []);%, ...
-          %[], [], W0);
+        [UV_new, fval, exitflag, output] = cplexqp(H, L, Aineq, bineq, [], [], ...
+          [], [], UV_init);
     else
         disp('Solving linear program');
-        [newUV, fval, exitflag, output] = cplexlp(L, Aineq, bineq, [], []);%, ...
-          %[], [], W0);
+        [UV_new, fval, exitflag, output] = cplexlp(L, Aineq, bineq, [], [], ...
+          [], [], UV_init);
     end
     
     if debug
+        % query pixel index for debugging
         i = 6;
         j = 6;
         t = 1;
+        
+        % pull variable values for spcified index
         ui = linearUIndex(i,j,t);
         vi = linearVIndex(i,j,t);
         pi = linearPIndex(i,j,t);
         qi = linearQIndex(i,j,t);
         yi = linearYIndex(i,j,t);
-        u = newUV(ui);
-        v = newUV(vi);
-        p = newUV(pi);
-        q = newUV(qi);
-        y = newUV(yi);
+        u = UV_new(ui);
+        v = UV_new(vi);
+        p = UV_new(pi);
+        q = UV_new(qi);
+        y = UV_new(yi);
         Xt = X{t+1}(i,j) - X{t}(i,j);
         [Xxp, Xyp] = imgradientxy(X{t});
         Xx = Xxp(i,j);
@@ -380,8 +410,8 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
             for j = 1:N
                 % here we assume all t of U come before all t of V,
                 % but above its U,V alternating!
-                newU{t}(i, j) = newUV(startIndices(1)+index-1);
-                newV{t}(i, j) = newUV(startIndices(2)+index-1);
+                newU{t}(i, j) = UV_new(startIndices(1)+index-1);
+                newV{t}(i, j) = UV_new(startIndices(2)+index-1);
                 index = index+1;
             end
         end
