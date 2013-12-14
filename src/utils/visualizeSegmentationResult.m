@@ -12,7 +12,7 @@ for t=1:T
     for c=1:C
         imgtmp(:,:,c) = uint8(I{t}(:,:,c).*uint8(X{t}>0.5) + brightnessFractions*(I{t}(:,:,c).*uint8(X{t}<=0.5)));
     end
-    imagesc(uint8(imgtmp));hold on;pause(0.2);
+    imagesc(uint8(imgtmp));hold on;pause(0.5);
 end
 
 end

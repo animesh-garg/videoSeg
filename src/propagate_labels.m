@@ -108,7 +108,7 @@ try
                 end                                
             end            
         end  
-        fprintf ('Completed adding variables for t =%d \n',t);
+        fprintf ('Completed adding variables for t =%d... \n',t);
     end
     
 
@@ -168,71 +168,14 @@ try
                 end                               
             end
         end 
-        fprintf ('Completed adding constraints set 1 for t= %d \n',t);
+        fprintf ('Completed adding constraints set 1 for t= %d... \n',t);
     end
     
     clear coeffTemp1 coeffTemp2
-   
-    %% add constraints for shrinkage/expansion
-    coeffTemp1= sparse(1,numVariables);
-    coeffTemp2= sparse(1,numVariables);
-    [I,J] = ind2sub([M,N],1:(M*N)); %generate indices for all pixels in one image
-    for t = 1:T-1             
-        %vector of indices for label variables in frame t 
-        Idx_ijt=sub2ind(varArraySize, t*ones(1,M*N),I,J); 
-        %vector of indices for labels in frame t+1
-        Idx_ijtPlus=sub2ind(varArraySize, (t+1)*ones(1,M*N),I,J);
-        
-        % add constraints FGinFrameT - FGinFrameTplus <= sigma*FGinFrameT 
-        coeffTemp1 (Idx_ijt) = 1-sigma;
-        coeffTemp1 (Idx_ijtPlus) = -1;
-        cplex.addRows(-inf, coeffTemp1, 0);                         
-        %reset coeffTemp1 for reuse in later iterations
-        coeffTemp1 (Idx_ijt) = 0;
-        coeffTemp1 (Idx_ijtPlus) = 0;
-        
-        % add constraints FGinFrameTplus - FGinFrameT <= sigma*FGinFrameT 
-        coeffTemp2 (Idx_ijt) = (1+sigma);
-        coeffTemp2 (Idx_ijtPlus) = 1;
-        cplex.addRows(-inf, coeffTemp2, 0);
-        %reset coeffTemp2 for reuse in later iterations
-        coeffTemp2 (Idx_ijt) = 0;
-        coeffTemp2 (Idx_ijtPlus) = 0;
-        
-    end
-    clear coeffTemp1 coeffTemp2    
-        
-    %% Add constraint x_1ij = init_label
-    %There are other better ways (do this while defining objective but it 
-    % hampers understanding    
-    coeffTemp= sparse(1,numVariables);
-    
-    %Using I and J from previous set of constraints
-    % I,J are indices for all pixels in one image as a list of tuples
-    %vector of indices for label variables in frame 1 
-    Idx_ijt=sub2ind(varArraySize, ones(M*N, 1),I',J');
-    
-    %add (M*N) equality constraints
-    for k = 1: (M*N)
-        coeffTemp(Idx_ijt(k)) =1;
-        % if init_image pixel is FG, then add a constraint making the
-        % corresponding label variable to be 1
-        if (init_image(I(k), J(k))==1)            
-            cplex.addRows(1, coeffTemp,1);
-        % if init_image pixel is BG, then add a constraint making the
-        % corresponding label variable to be 0
-        elseif (init_image(I(k), J(k))==0)                  
-            cplex.addRows(0, coeffTemp,0);
-        else
-            fprintf('Initial Mask needs to be Binary')
-            return;
-        end
-        coeffTemp(Idx_ijt(k)) =0;
-    end                
-    
-    clear coeffTemp
-    
+       
     %% adding auxiliary variables and constraints for temporal labelling coherence        
+    %This is the TIME HOG
+    
     varAuxTempArraySize = [T,M,N,2*temporal_nbd+1, 2*temporal_nbd+1];
     coeffTemp1= sparse(1,numVariables);
     coeffTemp2= sparse(1,numVariables);
@@ -280,37 +223,97 @@ try
                     end
                 end                                
             end
-        end        
+        end 
+        fprintf ('Completed adding constraints set 2 for t= %d... \n',t);
     end
     
     clear coeffTemp1 coeffTemp2
     
+    %% add constraints for shrinkage/expansion
+    coeffTemp1= sparse(1,numVariables);
+    coeffTemp2= sparse(1,numVariables);
+    [I,J] = ind2sub([M,N],1:(M*N)); %generate indices for all pixels in one image
+    for t = 1:T-1             
+        %vector of indices for label variables in frame t 
+        Idx_ijt=sub2ind(varArraySize, t*ones(1,M*N),I,J); 
+        %vector of indices for labels in frame t+1
+        Idx_ijtPlus=sub2ind(varArraySize, (t+1)*ones(1,M*N),I,J);
+        
+        % add constraints FGinFrameT - FGinFrameTplus <= sigma*FGinFrameT 
+        coeffTemp1 (Idx_ijt) = 1-sigma;
+        coeffTemp1 (Idx_ijtPlus) = -1;
+        cplex.addRows(-inf, coeffTemp1, 0);                         
+        %reset coeffTemp1 for reuse in later iterations
+        coeffTemp1 (Idx_ijt) = 0;
+        coeffTemp1 (Idx_ijtPlus) = 0;
+        
+        % add constraints FGinFrameTplus - FGinFrameT <= sigma*FGinFrameT 
+        coeffTemp2 (Idx_ijt) = (1+sigma);
+        coeffTemp2 (Idx_ijtPlus) = 1;
+        cplex.addRows(-inf, coeffTemp2, 0);
+        %reset coeffTemp2 for reuse in later iterations
+        coeffTemp2 (Idx_ijt) = 0;
+        coeffTemp2 (Idx_ijtPlus) = 0;
+        
+    end
+    fprintf ('Completed adding constraints for shrinkage/expansiosn.\n');
+    clear coeffTemp1 coeffTemp2    
+        
+    %% Add constraint x_1ij = init_label
+    %There are other better ways (do this while defining objective but it 
+    % hampers understanding    
+    coeffTemp= sparse(1,numVariables);
+    
+    %Using I and J from previous set of constraints
+    % I,J are indices for all pixels in one image as a list of tuples
+    %vector of indices for label variables in frame 1 
+    Idx_ijt=sub2ind(varArraySize, ones(1,M*N),I,J);
+    
+    %add (M*N) equality constraints
+    for k = 1: (M*N)
+        coeffTemp(Idx_ijt(k)) =1;
+        % if init_image pixel is FG, then add a constraint making the
+        % corresponding label variable to be 1
+        if (init_image(I(k), J(k))==1)            
+            cplex.addRows(1, coeffTemp,1);
+        % if init_image pixel is BG, then add a constraint making the
+        % corresponding label variable to be 0
+        elseif (init_image(I(k), J(k))==0)                  
+            cplex.addRows(0, coeffTemp,0);
+        else
+            fprintf('Initial Mask needs to be Binary')
+            return;
+        end
+        coeffTemp(Idx_ijt(k)) =0;
+    end                
+    fprintf ('Completed adding constraints for equality at t=1 \n');
+    
+    clear coeffTemp
         
 %% Call Cplex Solver
     cplex.solve()
-    
-    
+        
     % Write the solution
     fprintf('\nSolution status = %s\n',cplex.Solution.statusstring);
     fprintf('\nSolution Time = %d\n', cplex.Solution.time);
     fprintf('Solution value = %f\n',cplex.Solution.objval);
     
-    opt_sol = cplex.Solution.x;        
+    opt_sol = cplex.Solution.x; 
+    
+    
+%% read results
+    % only the first T*M*N variable are the labels
+    final_labels = cell (1,T);
 
+    %final_labels{1} = reshape(opt_sol(1:M*N)', M, N); 
+    for t = 0: T-1
+       final_labels{t+1} = reshape(opt_sol ((t*M*N +1) : (t+1)*M*N)', M,N);  
+    end
+    
 catch m
     throw (m);
-    disp(m.message);
+    disp(m.message);    
 
-%% read results
-% only the first T*M*N variable are the labels
-final_labels = cell (1,T);
+end %for try block
 
-%final_labels{1} = reshape(opt_sol(1:M*N)', M, N); 
-for t = 0: T-1
-   final_labels{t+1} = reshape(opt_sol ((t*M*N +1) : (t+1)*M*N)', M,N);  
-end
-    
-    
-end
-
-end
+end %for function definition

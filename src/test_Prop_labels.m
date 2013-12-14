@@ -59,6 +59,6 @@ params.spatial_nbd_size = spatial_nbd_size;
  
 X = propagate_labels(videoStruct, W, params);
 
-
+visualizeSegmentationResult(videoStruct, X);
  
 %% propagate labels
