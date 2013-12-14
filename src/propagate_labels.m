@@ -1,4 +1,4 @@
-function [ final_labels ] = propagate_labels( init_label, imSequence, W, params)
+function [ final_labels ] = propagate_labels( video, W, params)
 %PROPAGATE_FLOWS Solve for labels in next T time steps given all the
 %weights.
 %Input: 
@@ -16,30 +16,48 @@ sigma = params.sigma;
 spatial_nbd_size = params.spatial_nbd_size;
 nbdSize_Spat = (2*spatial_nbd_size+1)^2;
 
-temporal_nbd= params.h;
+temporal_nbd= params.window; %nbd in frame t+1
 nbdSize_Temp = (2*temporal_nbd+1)^2;
 
-if exists (params.threshEPS)
-    threshEPS = params.threshEPS;
-else
-    threshEPS = 0.5 ; %Assign some useful Value ToDO
-end
+% if exist ('params')
+%     threshEPS = params.threshEPS;
+% else
+%     threshEPS = 0.5 ; %Assign some useful Value ToDO
+% end
+
+threshEPS = 0.5;
+
+%
+imSequence = video.I;
+init_image = video.X1; 
 
 % If video sequence is multidim matrix
 [M,N,T]=size(imSequence);
 
 % if videosequence is a cell array
-T = length(imSequence.I);
-[M,N] = size(imSequence.I{1});
+T = length(imSequence);
+[M,N,~] = size(imSequence{1});
 
+%Pad the weight cell array with zeros in the last frame
+W{end+1} = zeros (size(W{end}));
 
 %% Get cost acc. to appearance model for each frame t in T 
 % gets costs
-C = getUnaryCosts(imSequence, init_label, threshEPS);
+%C = getUnaryCosts(imSequence, init_label, threshEPS);
+C = randomForestBasedCost(video);
+
+% if C is a cell make it a C(T,M,N)
+if iscell (C)
+    for t = 1:length(C)
+        Ctemp (t,:,:) = C{t};
+    end
+end
+C = Ctemp;
+clear Ctemp
 
 % rewrite Cost matrix C(T,M,N) into C(T, M*N)
 unaryCost = reshape(C,T, M*N);
-
+unaryCost = unaryCost';
 %% Get total number of variables in the forumulation
 numLabels = T*M*N; %number of variables of the type X_ijt
 numAuxVar_SLC = numLabels*(nbdSize_Spat); %this is BIG of the order of 2^25
@@ -56,24 +74,59 @@ try
          
     %% Adding binary variables for X_ijt
     cType = char(ones(1, M*N)*'B');
-    lb = zeros(1, M*N); ub = ones(1, M*N);   
+    lb = zeros(M*N,1); ub = ones(M*N,1);   
     for t = 1:T %Can do without this loop but makes it easier to understand
-        cplex.addCols(lambda(1)*unaryCost(t,:),[],lb,ub,cType);        
+        cplex.addCols(lambda(1)*unaryCost(:,t),[],lb,ub,cType);        
     end
     clear lb ub cType
     
     %% adding auxiliary variables and constraints for spatial labelling coherence
-    varArray = [T,M,N];
-    varAuxSpatArray = [T,M,N,2*spatial_nbd_size+1, 2*spatial_nbd_size+1];
-    coeffTemp1= sparse(numVariables,1);
-    coeffTemp2= sparse(numVariables,1);
+    
+   
+    for t = 1:T              
+        for i = 1: M
+            for j = 1:N                
+                %Define Spatial Neighborhood: 
+                % nbd_i = [i-spatial_nbd_size:i+spatial_nbd_size]                
+                for a = (-spatial_nbd_size):spatial_nbd_size
+                    for b  = (-spatial_nbd_size):spatial_nbd_size
+                        %add auxiliary variable for spatial labelling coherence
+                        cplex.addCols(lambda(2),[], 0,1, 'C');                       
+                    end
+                end                
+                
+                
+                %Define Temporal Neighborhood: 
+                % nbd_i = [i-temporal_nbd:i+temporal_nbd]
+                for a = (-temporal_nbd):temporal_nbd
+                    for b  = (-temporal_nbd):temporal_nbd
+                       
+                        %add auxiliary variable for temporal labelling coherence
+                        cplex.addCols(lambda(3)*W{t}(i,j,a+temporal_nbd+1 ...
+                        ,b+temporal_nbd+1),[], 0,1, 'C');                                                
+                    end
+                end                                
+            end            
+        end  
+        fprintf ('Completed adding variables for t =%d \n',t);
+    end
+    
+
+    varArraySize = [T,M,N];
+    varAuxSpatArraySize = [T,M,N,2*spatial_nbd_size+1, 2*spatial_nbd_size+1];
+    coeffTemp1= sparse(1,numVariables);
+    coeffTemp2= sparse(1,numVariables);
     
     %Possible vectorization exists.
     % Make the idx_ijt as vectors and then then coeffTemp would be sparse
     % matrices instead of arrays.
     %ToDO: also if we define coeffTemp1 inside the loop, then we could
     %possibly use parfor or spmd
-    for t = 1:T              
+
+    %coeffTemp1 = cell(1,T); coeffTemp2s = cell(1,T);
+    for t = 1:T                             
+        coeffTemp1= sparse(1,numVariables);
+        coeffTemp2= sparse(1,numVariables);
         for i = 1: M
             for j = 1:N
                 %Define Spatial Neighborhood: 
@@ -82,107 +135,53 @@ try
                     for b  = (-spatial_nbd_size):spatial_nbd_size                                                
                         nbd_i= min(max(i+a,1), M);
                         nbd_j = min(max(j+b,1), N);
-                       
-                        %add auxiliary variable for spatial labelling coherence
-                        cplex.addCols(lambda(2),[], 0,1, 'C');
                         
                         %add correspording pair of constraints                        
-                        Idx_ijt = sub2ind(varArray, t,i,j); %index of x_ijt
-                        IdX_ijt_y = sub2ind(varArray, t,nbd_i,nbd_j); %index of x_ijt_y
-                        IdX_varAux = numLabels+ sub2ind(varAuxSpatArray, t,i,j,a,b);
+                        Idx_ijt = sub2ind(varArraySize, t,i,j); %index of x_ijt
+                        Idx_ijt_y = sub2ind(varArraySize, t,nbd_i,nbd_j); %index of x_ijt_y
+                        %Check CORRECTNESS
+                        Idx_varAux = numLabels+ sub2ind(varAuxSpatArraySize, ...
+                            t,i,j,a+spatial_nbd_size+1,b+spatial_nbd_size+1);
                         
                         %Adding x_ijt - x_y <= p_ijty
                         coeffTemp1(Idx_ijt) = 1; 
                         coeffTemp1(Idx_ijt_y) = -1;
-                        coeffTemp1(IdX_varAux) = -1;
+                        coeffTemp1(Idx_varAux) = -1;
                         cplex.addRows(-inf, coeffTemp1, 0);
                         
                         %reset coeffTemp1 for reuse in later iterations                        
                         coeffTemp1(Idx_ijt) = 0; 
                         coeffTemp1(Idx_ijt_y) = 0;
-                        coeffTemp1(IdX_varAux) = 0;                        
+                        coeffTemp1(Idx_varAux) = 0;                        
                         
                         %Adding -x_ijt + x_y <= p_ijty
                         coeffTemp2(Idx_ijt) = -1; 
                         coeffTemp2(Idx_ijt_y) = 1;
-                        coeffTemp2(IdX_varAux) = -1;
+                        coeffTemp2(Idx_varAux) = -1;
                         cplex.addRows(-inf, coeffTemp2, 0);                         
                         
                         %reset coeffTemp1 for reuse in later iterations                        
                         coeffTemp2(Idx_ijt) = 0; 
                         coeffTemp2(Idx_ijt_y) = 0;
-                        coeffTemp2(IdX_varAux) = 0;
+                        coeffTemp2(Idx_varAux) = 0;
                     end
-                end                
+                end                               
             end
-        end        
+        end 
+        fprintf ('Completed adding constraints set 1 for t= %d \n',t);
     end
     
     clear coeffTemp1 coeffTemp2
-    
-    %% adding auxiliary variables and constraints for temporal labelling coherence        
-    varAuxTempArray = [T,M,N,2*temporal_nbd+1, 2*temporal_nbd+1];
-    coeffTemp1= sparse(numVariables,1);
-    coeffTemp2= sparse(numVariables,1);
-    
-    for t = 1:T-1              
-        for i = 1: M
-            for j = 1:N
-                %Define Temporal Neighborhood: 
-                % nbd_i = [i-temporal_nbd:i+temporal_nbd]
-                for a = (-temporal_nbd):temporal_nbd
-                    for b  = (-temporal_nbd):temporal_nbd                                                
-                        nbd_i= min(max(i+a,1), M);
-                        nbd_j = min(max(j+b,1), N);
-                       
-                        %add auxiliary variable for temporal labelling coherence
-                        cplex.addCols(lambda(3)*W{t}(i,j,a,b),[], 0,1, 'C');                        
-                        
-                        %add correspording pair of constraints                        
-                        Idx_ijt = sub2ind(varArray, t,i,j); %index of x_ijt
-                        %index of x_ijtPlus_ab
-                        IdX_ijtPlus_ab = sub2ind(varArray, (t+1),nbd_i,nbd_j); 
-                        IdX_varAux = numLabels+ numAuxVar_SLC +...
-                            sub2ind(varAuxSpatArray, t,i,j,a,b);
-                        
-                        %Adding x_ijt - x_ijtPlus_ab <= q_ijtab
-                        coeffTemp1(Idx_ijt) = 1; 
-                        coeffTemp1(IdX_ijtPlus_ab) = -1;
-                        coeffTemp1(IdX_varAux) = -1;
-                        cplex.addRows(-inf, coeffTemp1, 0);
-                        
-                        %reset coeffTemp1 for reuse in later iterations                        
-                        coeffTemp1(Idx_ijt) = 0; 
-                        coeffTemp1(IdX_ijtPlus_ab) = 0;
-                        coeffTemp1(IdX_varAux) = 0;                        
-                        
-                        %Adding -x_ijt + x_ijtPlus_ab <= q_ijtab
-                        coeffTemp2(Idx_ijt) = -1; 
-                        coeffTemp2(IdX_ijtPlus_ab) = 1;
-                        coeffTemp2(IdX_varAux) = -1;
-                        cplex.addRows(-inf, coeffTemp2, 0);                         
-                        
-                        %reset coeffTemp2 for reuse in later iterations
-                        coeffTemp2(Idx_ijt) = 0; 
-                        coeffTemp2(IdX_ijtPlus_ab) = 0;
-                        coeffTemp2(IdX_varAux) = 0;
-                    end
-                end                
-            end
-        end        
-    end
-    
-    clear coeffTemp1 coeffTemp2
-    
+   
     %% add constraints for shrinkage/expansion
-    coeffTemp1= sparse(numVariables,1);
-    coeffTemp2= sparse(numVariables,1);
+    coeffTemp1= sparse(1,numVariables);
+    coeffTemp2= sparse(1,numVariables);
     [I,J] = ind2sub([M,N],1:(M*N)); %generate indices for all pixels in one image
     for t = 1:T-1             
         %vector of indices for label variables in frame t 
-        Idx_ijt=sub2ind(varArray, t*ones(M*N, 1),I',J'); 
+        Idx_ijt=sub2ind(varArraySize, t*ones(1,M*N),I,J); 
         %vector of indices for labels in frame t+1
-        Idx_ijtPlus=sub2ind(varArray, (t+1)*ones(M*N, 1),I',J');
+        Idx_ijtPlus=sub2ind(varArraySize, (t+1)*ones(1,M*N),I,J);
         
         % add constraints FGinFrameT - FGinFrameTplus <= sigma*FGinFrameT 
         coeffTemp1 (Idx_ijt) = 1-sigma;
@@ -201,17 +200,17 @@ try
         coeffTemp2 (Idx_ijtPlus) = 0;
         
     end
-    clear coeffTemp1 coeffTemp2
-    
+    clear coeffTemp1 coeffTemp2    
+        
     %% Add constraint x_1ij = init_label
     %There are other better ways (do this while defining objective but it 
     % hampers understanding    
-    coeffTemp= sparse(numVariables,1);
+    coeffTemp= sparse(1,numVariables);
     
     %Using I and J from previous set of constraints
     % I,J are indices for all pixels in one image as a list of tuples
     %vector of indices for label variables in frame 1 
-    Idx_ijt=sub2ind(varArray, ones(M*N, 1),I',J');
+    Idx_ijt=sub2ind(varArraySize, ones(M*N, 1),I',J');
     
     %add (M*N) equality constraints
     for k = 1: (M*N)
@@ -232,6 +231,60 @@ try
     end                
     
     clear coeffTemp
+    
+    %% adding auxiliary variables and constraints for temporal labelling coherence        
+    varAuxTempArraySize = [T,M,N,2*temporal_nbd+1, 2*temporal_nbd+1];
+    coeffTemp1= sparse(1,numVariables);
+    coeffTemp2= sparse(1,numVariables);
+    
+    
+    for t = 1:T-1
+        for i = 1: M
+            for j = 1:N
+                %Define Temporal Neighborhood: 
+                % nbd_i = [i-temporal_nbd:i+temporal_nbd]
+                for a = (-temporal_nbd):temporal_nbd
+                    for b  = (-temporal_nbd):temporal_nbd                                                
+                        nbd_i= min(max(i+a,1), M);
+                        nbd_j = min(max(j+b,1), N);
+                        
+                        %add correspording pair of constraints                        
+                        Idx_ijt = sub2ind(varArraySize, t,i,j); %index of x_ijt
+                        %index of x_ijtPlus_ab
+                        Idx_ijtPlus_ab = sub2ind(varArraySize, (t+1),nbd_i,nbd_j); 
+                        Idx_varAux = numLabels+ numAuxVar_SLC +...
+                            sub2ind(varAuxTempArraySize, t,i,j,...
+                            a+temporal_nbd+1,b+temporal_nbd+1);
+                        
+                        %Adding x_ijt - x_ijtPlus_ab <= q_ijtab
+                        coeffTemp1(Idx_ijt) = 1; 
+                        coeffTemp1(Idx_ijtPlus_ab) = -1;
+                        coeffTemp1(Idx_varAux) = -1;
+                        cplex.addRows(-inf, coeffTemp1, 0);
+                        
+                        %reset coeffTemp1 for reuse in later iterations                        
+                        coeffTemp1(Idx_ijt) = 0; 
+                        coeffTemp1(Idx_ijtPlus_ab) = 0;
+                        coeffTemp1(Idx_varAux) = 0;                        
+                        
+                        %Adding -x_ijt + x_ijtPlus_ab <= q_ijtab
+                        coeffTemp2(Idx_ijt) = -1; 
+                        coeffTemp2(Idx_ijtPlus_ab) = 1;
+                        coeffTemp2(Idx_varAux) = -1;
+                        cplex.addRows(-inf, coeffTemp2, 0);                         
+                        
+                        %reset coeffTemp2 for reuse in later iterations
+                        coeffTemp2(Idx_ijt) = 0; 
+                        coeffTemp2(Idx_ijtPlus_ab) = 0;
+                        coeffTemp2(Idx_varAux) = 0;
+                    end
+                end                                
+            end
+        end        
+    end
+    
+    clear coeffTemp1 coeffTemp2
+    
         
 %% Call Cplex Solver
     cplex.solve()

@@ -12,7 +12,7 @@ function [Cost] = getUnaryPotential(imSequence, initLabel, threshEPS, pixelWise)
 
 [M, N, T] = size (imSequence);
 
-if ~exists(pixelWise)
+if ~exist('pixelWise')
     pixelWise = 1;
 end
 
@@ -57,12 +57,12 @@ for t = 1: T
     for j = 1:N
         %GRAYSCALE ASSUMPTION - TODO: Color
         pixelDist = imSequence (i,j,t)*ones(sizeFG,1) - pixelsInFG ; 
-        if (min(pixelDist) < threshEPS))
+        if (min(pixelDist) < threshEPS)
             %if similar to FG assign cost as min distance (normalized)
-            Cost (i,j,t) = min(pixelDist)/sum(pixelDist); 
+            Cost (t,i,j) = min(pixelDist)/sum(pixelDist); 
         else
             %if similar to FG assign a large cost
-            Cost (i,j,t) = 1;
+            Cost (t,i,j) = 1;
         end
     end
    end   

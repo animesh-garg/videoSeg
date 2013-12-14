@@ -1,5 +1,7 @@
 
-
+clear all
+close all
+clc
 cplex = Cplex('test_CPLEX')
 cplex.Model.sense = 'maximize';
 
@@ -25,34 +27,34 @@ disp (cplex.Solution.x);
 
 
 %profiling
-
-tic
-spmd
-    a = 2; b = 1; c=1;
-   for i = 1:250
-       for j = 1: 250
-           for k = 1:10
-               for l=1:81
-                   a = b+c;
-               end
-           end
-       end
-   end
-end
-
-toc
-
-tic
-
-a = 2; b =1; c=1;
-for i = 1:250
-       for j = 1: 250
-           for k = 1:10
-               for l=1:81
-                   a = b+c;
-               end
-           end
-       end
-   end
-
-toc
+% 
+% tic
+% spmd
+%     a = 2; b = 1; c=1;
+%    for i = 1:250
+%        for j = 1: 250
+%            for k = 1:10
+%                for l=1:81
+%                    a = b+c;
+%                end
+%            end
+%        end
+%    end
+% end
+% 
+% toc
+% 
+% tic
+% 
+% a = 2; b =1; c=1;
+% for i = 1:250
+%        for j = 1: 250
+%            for k = 1:10
+%                for l=1:81
+%                    a = b+c;
+%                end
+%            end
+%        end
+%    end
+% 
+% toc

@@ -1,4 +1,5 @@
 % MAIN script for EE227B project
+startup()
 
 % set vars
 iters = 10;

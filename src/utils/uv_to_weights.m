@@ -2,6 +2,7 @@ function weights = uv_to_weights(U, V, b)
 %UV_TO_WEIGHTS Summary of this function goes here
 %   Detailed explanation goes here
 %TODO - use interpolation instead of rounding
+% b: half size of the window
     [m, n] = size(U);
 
     U(U >  b) =  b;
