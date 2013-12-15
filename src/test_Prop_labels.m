@@ -10,7 +10,7 @@ startup();
 %% create test data
 %[videoStruct, T] = genSimpleTestVideo();
 Im = imread('chess.jpg');
-[videoStruct] = generateSyntheticDataMovement(Im,1,1,5,0.01);
+[videoStruct] = generateSyntheticDataMovement(Im,1,1,5,0.001);
 
 %T = 5;
 
