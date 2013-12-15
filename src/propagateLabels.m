@@ -19,6 +19,10 @@ nbdSize_Spat = (2*spatial_nbd_size+1)^2;
 temporal_nbd= params.window; %nbd in frame t+1
 nbdSize_Temp = (2*temporal_nbd+1)^2;
 
+%get images form video and labels in first frame
+imSequence = video.I;
+init_image = video.X1; 
+
 % if exist ('params')
 %     threshEPS = params.threshEPS;
 % else
@@ -27,12 +31,8 @@ nbdSize_Temp = (2*temporal_nbd+1)^2;
 
 threshEPS = 0.5;
 
-%
-imSequence = video.I;
-init_image = video.X1; 
-
 % If video sequence is multidim matrix
-[M,N,T]=size(imSequence);
+%[M,N,T]=size(imSequence);
 
 % if videosequence is a cell array
 T = length(imSequence);
@@ -49,15 +49,16 @@ C = randomForestBasedCost(video);
 % if C is a cell make it a C(T,M,N)
 if iscell (C)
     for t = 1:length(C)
-        Ctemp (t,:,:) = C{t};
+        Ctemp (:,:,t) = C{t};
     end
 end
 C = Ctemp;
 clear Ctemp
 
-% rewrite Cost matrix C(T,M,N) into C(T, M*N)
-unaryCost = reshape(C,T, M*N);
-unaryCost = unaryCost';
+% rewrite Cost matrix C(M,N,T) into C(M*N,T)
+unaryCost = reshape(C, M*N,T);
+%unaryCost = unaryCost';
+
 %% Get total number of variables in the forumulation
 numLabels = T*M*N; %number of variables of the type X_ijt
 numAuxVar_SLC = numLabels*(nbdSize_Spat); %this is BIG of the order of 2^25
@@ -248,7 +249,7 @@ try
         coeffTemp1 (Idx_ijtPlus) = 0;
         
         % add constraints FGinFrameTplus - FGinFrameT <= sigma*FGinFrameT 
-        coeffTemp2 (Idx_ijt) = (1+sigma);
+        coeffTemp2 (Idx_ijt) = -(1+sigma);
         coeffTemp2 (Idx_ijtPlus) = 1;
         cplex.addRows(-inf, coeffTemp2, 0);
         %reset coeffTemp2 for reuse in later iterations
