@@ -24,7 +24,7 @@ for t = 1:T-1
     %compute flow using Horn-Schunk method and Flow function in Piotr's
     %toolbox
     fprintf('Computing flows for frame %d...\n', t); 
-    [initU{t},initV{t}] = opticalFlow(rgb2gray(I{t}),rgb2gray(I{t+1}),{'type','HS'});
+    [initU{t},initV{t}] = opticalFlow(rgb2gray(I{t+1}),rgb2gray(I{t}),{'type','HS'});
     %[initU{t},initV{t}] = opticalFlow(rgb2gray(I{t}),rgb2gray(I{t}),{'type','LK'});
 end
 
@@ -45,19 +45,19 @@ nPixForeground = sum(sum(X1));
 nPixBackground = nPixFrame - nPixForeground;
 
 % get averages for appearance model cost
-frame1 = double(I{1});
-avgColorF(1) = (1.0 / nPixForeground) * ...
-    sum(sum(squeeze(frame1(:,:,1)).*X1));
-avgColorF(2) = (1.0 / nPixForeground) * ...
-    sum(sum(squeeze(frame1(:,:,2)).*X1));
-avgColorF(3) = (1.0 / nPixForeground) * ...
-    sum(sum(squeeze(frame1(:,:,3)).*X1));
-
-avgColorB(1) = (1.0 / nPixBackground) * ...
-    sum(sum(squeeze(frame1(:,:,1)).*(1-X1)));
-avgColorB(2) = (1.0 / nPixBackground) * ...
-    sum(sum(squeeze(frame1(:,:,2)).*(1-X1)));
-avgColorB(3) = (1.0 / nPixBackground) * ...
-    sum(sum(squeeze(frame1(:,:,3)).*(1-X1)));
+% frame1 = double(I{1});
+% avgColorF(1) = (1.0 / nPixForeground) * ...
+%     sum(sum(squeeze(frame1(:,:,1)).*X1));
+% avgColorF(2) = (1.0 / nPixForeground) * ...
+%     sum(sum(squeeze(frame1(:,:,2)).*X1));
+% avgColorF(3) = (1.0 / nPixForeground) * ...
+%     sum(sum(squeeze(frame1(:,:,3)).*X1));
+% 
+% avgColorB(1) = (1.0 / nPixBackground) * ...
+%     sum(sum(squeeze(frame1(:,:,1)).*(1-X1)));
+% avgColorB(2) = (1.0 / nPixBackground) * ...
+%     sum(sum(squeeze(frame1(:,:,2)).*(1-X1)));
+% avgColorB(3) = (1.0 / nPixBackground) * ...
+%     sum(sum(squeeze(frame1(:,:,3)).*(1-X1)));
 
 end

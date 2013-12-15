@@ -3,9 +3,9 @@
 % setup the problem
 %video = genSimpleTestVideo();
 
-T = 5;
+T = 10;
 image = imread('src/utils/chess.jpg');
-video = generateSyntheticDataMovement(image, 2*sin(1:T), 2*cos(1:T), T, 0.01);
+video = generateSyntheticDataMovement(image, 0.5*[1:T].*sin(1:T), 0.5*[1:T].*cos(1:T), T, 0.01);
 
 figure;
 for i = 1:T
@@ -14,7 +14,6 @@ video.I{i} = rgb2gray(video.I{i});
 imshow(video.I{i});
 end
 
-d = 2;
 [m, n, c] = size(video.I{1});
 
 %% calculate new weights
@@ -26,6 +25,7 @@ for t = 1:T
 end
 
 % set penalties
+windowSize = 5;
 lambda = ones(1, 7);
 lambda(3) = 1e0;
 lambda(4) = 1e0;
@@ -33,12 +33,14 @@ lambda(5) = 2e1;
 lambda(6) = 1e1;
 lambda(7) = 1e-2;
 useL2Penalty = false;
+loadCSV = true;
+saveCSV = false;
 debug = false;
 
 % solve
 tic;
 [newU, newV] = solveWeightsHornSchunk(video.gTruth.X, U_init, V_init, ...
-    video, T, lambda, d, useL2Penalty, debug);
+    video, T, lambda, windowSize, useL2Penalty, loadCSV, saveCSV, debug);
 elapsed = toc;
 
 fprintf('Optimization took %f sec\n', elapsed); 

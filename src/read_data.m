@@ -1,4 +1,4 @@
-function [videoStruct] = read_data(videoName)
+function [videoStruct] = read_data(videoName, T)
 %READ_DATA Returns a struct for the given video name
 %   Input : videoName (eg - 'Cars1')
 %   Output : VideoStruct with fields I (frame sequence), X1(initial segmentation)
@@ -10,7 +10,9 @@ videoPath = sprintf('%s%s', datasetPath, videoName);
 
 %% Getting names of image files
 imageNames = getFileNamesFromDirectory(videoPath,'mode','path','types',{'.jpg','.jpeg','.png'}); %Some script i'd written earlier. Included in utils
-T = length(imageNames);
+if nargin < 2
+    T = length(imageNames);
+end
 
 %% Reading the frames of the video
 I = {};

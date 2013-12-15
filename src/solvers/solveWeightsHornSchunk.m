@@ -1,4 +1,5 @@
-function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, useL2Penalty, debug)
+function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, ...
+    lambda, windowSize, useL2Penalty, loadCSV, saveCSV, debug)
 %SOLVE_WEIGHT_AVG_MOMENTUM Solve for the flow weights given a pixel labeling (using
 % cplex) with average momentum constraint
 % The variable we end up optimizing is W_hat = [W Y Z R S]', where
@@ -11,8 +12,14 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
 %   U : initial U components of flow
 %   V : initial V components of flow
 %   video : struct containing the video data
+%   T : length of video sequence
 %   lambda : vector of constant weights in the objective function
-%   d : size of window to average flows over
+%   windowSize : size of window to average flows over
+%   useL2Penalty: whether or not to use an L2 penalty
+%   loadCSV: whether or not to load the constraint matrix from a CSV
+%   saveCSV: whether or not to save the constraint matrix to a CSV
+%   debug: flag to stop program in an if statement to examine specific
+%   variables
 %
 % OUTPUTS - 
 %   returns the weights found by cplex
@@ -42,26 +49,37 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
     startIndices(1) = 1;                            % U
     startIndices(2) = startIndices(1) + numPixels;  % V
     startIndices(3) = startIndices(2) + numPixels;  % P
-    startIndices(4) = startIndices(3) + numPixels;  % Q
+    startIndices(4) = startIndices(3) + c*numPixels;% Q
     startIndices(5) = startIndices(4) + numPixels;  % Y
     startIndices(6) = startIndices(5) + numPixels;  % Z
     startIndices(7) = startIndices(6) + numPixels;  % R
     startIndices(8) = startIndices(7) + numMomentum;% S
     
     % Create cost vector to sum up the auxiliary variables
-    L = zeros(numVariables,1);
-    L(startIndices(3):startIndices(4)-1) = lambda(3) * ones(numPixels,1); % P summation
-    L(startIndices(4):startIndices(5)-1) = lambda(4) * ones(numPixels,1); % Q summation (grayscale only for now)
-    L(startIndices(5):startIndices(6)-1) = lambda(5) * ones(numPixels,1);  % Y summation
-    L(startIndices(6):startIndices(7)-1) = lambda(5) * ones(numPixels,1);  % Z summation
-    L(startIndices(7):startIndices(8)-1) = lambda(6) * ones(numMomentum,1); % R summation
-    L(startIndices(8):numVariables) = lambda(6) * ones(numMomentum,1); % S summation
-    L = sparse(L);
-    
-    % create diagonal quadratic penalty if specified
-    H = [];
-    if useL2Penalty
-        H = lambda(7)*eye(numVariables);
+    if loadCSV
+        L = load('flow_cache/L.mat', 'L');
+        L = L.L;
+
+        % create diagonal quadratic penalty if specified
+        if useL2Penalty
+            H = load('flow_cache/H.mat', 'H');
+            H = H.H;
+        end
+    else
+        L = zeros(numVariables,1);
+        L(startIndices(3):startIndices(4)-1) = lambda(3) * ones(numPixels,1); % P summation
+        L(startIndices(4):startIndices(5)-1) = lambda(4) * ones(c*numPixels,1); % Q summation (grayscale only for now)
+        L(startIndices(5):startIndices(6)-1) = lambda(5) * ones(numPixels,1);  % Y summation
+        L(startIndices(6):startIndices(7)-1) = lambda(5) * ones(numPixels,1);  % Z summation
+        L(startIndices(7):startIndices(8)-1) = lambda(6) * ones(numMomentum,1); % R summation
+        L(startIndices(8):numVariables) = lambda(6) * ones(numMomentum,1); % S summation
+        L = sparse(L);
+
+        % create diagonal quadratic penalty if specified
+        H = [];
+        if useL2Penalty
+            H = lambda(7)*eye(numVariables);
+        end
     end
    
     % Inequality constraints
@@ -78,16 +96,24 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
     % 6. Lower bound on UV vars
     % 7. Upper bound on UV vars
     disp('Generating inequality constraints');
-    numInequalityConstraints = 2*(2*numPixels) + 2*(4*numFlows) + 2*numFlows;
-    Aineq = zeros(numInequalityConstraints, numVariables);
-    bineq = zeros(numInequalityConstraints, 1);
+    numInequalityConstraints = (2*numPixels) + (2*c*numPixels) + 2*(4*numFlows) + 2*numFlows;
+    
+    if loadCSV
+        Aineq = load('flow_cache/Aineq.mat');
+        Aineq = Aineq.Aineq;
+        bineq = load('flow_cache/bineq.mat');
+        bineq = bineq.bineq;
+    else
+        Aineq = zeros(numInequalityConstraints, numVariables);
+        bineq = zeros(numInequalityConstraints, 1);
+    end
     
     % helper functions for indexing into the arrays
     linearIndex = @(i,j,t) ((j-1) + (i-1)*N + (t-1)*M*N + 1);
     linearUIndex = @(i,j,t) (startIndices(1) + linearIndex(i,j,t) - 1);
     linearVIndex = @(i,j,t) (startIndices(2) + linearIndex(i,j,t) - 1);
     linearPIndex = @(i,j,t) (startIndices(3) + linearIndex(i,j,t) - 1);
-    linearQIndex = @(i,j,t) (startIndices(4) + linearIndex(i,j,t) - 1);
+    linearQIndex = @(i,j,t,k) (startIndices(4) + (k-1)*numPixels + linearIndex(i,j,t) - 1);
     linearYIndex = @(i,j,t) (startIndices(5) + linearIndex(i,j,t) - 1);
     linearZIndex = @(i,j,t) (startIndices(6) + linearIndex(i,j,t) - 1);
     linearRIndex = @(i,j,t) (startIndices(7) + linearIndex(i,j,t) - 1);
@@ -124,229 +150,240 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
     
     % Constraint 2 - Q image intensity similarity constraint
     disp('Generating inequality constraint 2');
-    for t = 1:(T-1)
-        [imGradientX, imGradientY] = imgradientxy(I{t});
-        for i = 1:M
-            for j = 1:N
-                U_index = linearUIndex(i,j,t);
-                V_index = linearVIndex(i,j,t);
-                Q_index = linearQIndex(i,j,t);
-                imGradientT = I{t+1}(i,j) - I{t}(i,j);
-                
-                % add positive inequality constraint
-                g = 1.0; % constant to normalize image gradients (NOT USED)
-                Aineq(index+0, U_index) = g*imGradientX(i,j);
-                Aineq(index+0, V_index) = g*imGradientY(i,j);
-                Aineq(index+0, Q_index) = -1;
-                bineq(index+0) = -g*imGradientT;
-                
-                % add negative inequality constraint
-                Aineq(index+1, U_index) = -g*imGradientX(i,j);
-                Aineq(index+1, V_index) = -g*imGradientY(i,j);
-                Aineq(index+1, Q_index) = -1;
-                bineq(index+1) = g*imGradientT;
+    for k = 1:c
+        for t = 1:(T-1)
+            [imGradientX, imGradientY] = imgradientxy(I{t}(:,:,k));
+            for i = 1:M
+                for j = 1:N
+                    U_index = linearUIndex(i,j,t);
+                    V_index = linearVIndex(i,j,t);
+                    Q_index = linearQIndex(i,j,t,k);
+                    imGradientT = I{t+1}(i,j) - I{t}(i,j);
 
-                index = index+2;
+                    % add positive inequality constraint
+                    g = 1.0; % constant to normalize image gradients (NOT USED)
+                    Aineq(index+0, U_index) = g*imGradientX(i,j);
+                    Aineq(index+0, V_index) = g*imGradientY(i,j);
+                    Aineq(index+0, Q_index) = -1;
+                    bineq(index+0) = -g*imGradientT;
+
+                    % add negative inequality constraint
+                    Aineq(index+1, U_index) = -g*imGradientX(i,j);
+                    Aineq(index+1, V_index) = -g*imGradientY(i,j);
+                    Aineq(index+1, Q_index) = -1;
+                    bineq(index+1) = g*imGradientT;
+
+                    index = index+2;
+                end
             end
         end
     end
     
-    % Constraint 3 - Y - U spatial consistency constraint
-    disp('Generating inequality constraint 3');
-    for t = 1:(T-1)
-        for i = 1:M
-            for j = 1:N
-                % generate the mean computing matrices
-                startX = safeIndex(j, -d, N);
-                endX = safeIndex(j, d, N);
-                startY = safeIndex(i, -d, M);
-                endY = safeIndex(i, d, M);
-                xInterval = endX-startX+1;
-                yInterval = endY-startY+1;
-                nSummed = xInterval*yInterval;
-                
-                % build an averaging filter by first putting the summation
-                % window into the location in the image and then reshaping
-                % to match the size of the variable vector 
-                avgFilter = zeros(M, N);
-                avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
-                    ones(yInterval, xInterval);
-                avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
-                
-                avgFilterAllVariables = zeros(1, numVariables);
-                startIndex = linearUIndex(1,1,t);
-                endIndex = linearUIndex(1,1,t+1)-1;
-                avgFilterAllVariables(startIndex:endIndex) = avgFilter;
-                
-                U_index = linearUIndex(i,j,t);
-                Y_index = linearYIndex(i,j,t);
-                
-                % place vectors into inequality matrices
-                Aineq(index+0, :) = -avgFilterAllVariables;
-                Aineq(index+0, U_index) = Aineq(index+0, U_index) + 1;
-                Aineq(index+0, Y_index) = -1;
-                
-                Aineq(index+1, :) = avgFilterAllVariables;
-                Aineq(index+1, U_index) = Aineq(index+1, U_index) - 1;
-                Aineq(index+1, Y_index) = -1;
+    if ~loadCSV
+        % Constraint 3 - Y - U spatial consistency constraint
+        disp('Generating inequality constraint 3');
+        for t = 1:(T-1)
+            for i = 1:M
+                for j = 1:N
+                    % generate the mean computing matrices
+                    startX = safeIndex(j, -windowSize, N);
+                    endX = safeIndex(j, windowSize, N);
+                    startY = safeIndex(i, -windowSize, M);
+                    endY = safeIndex(i, windowSize, M);
+                    xInterval = endX-startX+1;
+                    yInterval = endY-startY+1;
+                    nSummed = xInterval*yInterval;
 
-                index = index+2;
+                    % build an averaging filter by first putting the summation
+                    % window into the location in the image and then reshaping
+                    % to match the size of the variable vector 
+                    avgFilter = zeros(M, N);
+                    avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
+                        ones(yInterval, xInterval);
+                    avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
+
+                    avgFilterAllVariables = zeros(1, numVariables);
+                    startIndex = linearUIndex(1,1,t);
+                    endIndex = linearUIndex(1,1,t+1)-1;
+                    avgFilterAllVariables(startIndex:endIndex) = avgFilter;
+
+                    U_index = linearUIndex(i,j,t);
+                    Y_index = linearYIndex(i,j,t);
+
+                    % place vectors into inequality matrices
+                    Aineq(index+0, :) = -avgFilterAllVariables;
+                    Aineq(index+0, U_index) = Aineq(index+0, U_index) + 1;
+                    Aineq(index+0, Y_index) = -1;
+
+                    Aineq(index+1, :) = avgFilterAllVariables;
+                    Aineq(index+1, U_index) = Aineq(index+1, U_index) - 1;
+                    Aineq(index+1, Y_index) = -1;
+
+                    index = index+2;
+                end
             end
         end
+
+        % Constraint 4 - Z - V spatial consistency constraint
+        disp('Generating inequality constraint 4');
+        for t = 1:(T-1)
+            for i = 1:M
+                for j = 1:N
+                    % generate the mean computing matrices
+                    startX = safeIndex(j, -windowSize, N);
+                    endX = safeIndex(j, windowSize, N);
+                    startY = safeIndex(i, -windowSize, M);
+                    endY = safeIndex(i, windowSize, M);
+                    xInterval = endX-startX+1;
+                    yInterval = endY-startY+1;
+                    nSummed = xInterval*yInterval;
+
+                    % build an averaging filter by first putting the summation
+                    % window into the location in the image and then reshaping
+                    % to match the size of the variable vector 
+                    avgFilter = zeros(M, N);
+                    avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
+                        ones(yInterval, xInterval);
+                    avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
+
+                    avgFilterAllVariables = zeros(1, numVariables);
+                    startIndex = linearVIndex(1,1,t);
+                    endIndex = linearVIndex(1,1,t+1)-1;
+                    avgFilterAllVariables(startIndex:endIndex) = avgFilter;
+
+                    V_index = linearVIndex(i,j,t);
+                    Z_index = linearZIndex(i,j,t);
+
+                    % place vectors into inequality matrices
+                    Aineq(index+0, :) = -avgFilterAllVariables;
+                    Aineq(index+0, V_index) = Aineq(index+0, V_index) + 1;
+                    Aineq(index+0, Z_index) = -1;
+
+                    Aineq(index+1, :) = avgFilterAllVariables;
+                    Aineq(index+1, V_index) = Aineq(index+1, V_index) - 1;
+                    Aineq(index+1, Z_index) = -1;
+
+                    index = index+2;
+                end
+            end
+        end
+
+        % Constraint 5 - R - U momentum constraint
+        disp('Generating inequality constraint 5');
+        for t = 1:(T-2)
+            for i = 1:M
+                for j = 1:N
+                    % generate the mean computing matrices
+                    startX = safeIndex(j, -windowSize, N);
+                    endX = safeIndex(j, windowSize, N);
+                    startY = safeIndex(i, -windowSize, M);
+                    endY = safeIndex(i, windowSize, M);
+                    xInterval = endX-startX+1;
+                    yInterval = endY-startY+1;
+                    nSummed = xInterval*yInterval;
+
+                    % build an averaging filter by first putting the summation
+                    % window into the location in the image and then reshaping
+                    % to match the size of the variable vectors
+                    avgFilter = zeros(M, N);
+                    avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
+                        ones(yInterval, xInterval);
+                    avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
+
+                    % put the filter in the variable range for times t and t+1
+                    % since we want to compute the temporal derivatives
+                    avgFilterAllVariables = zeros(1, numVariables);
+                    startIndex = linearUIndex(1,1,t);
+                    endIndex = linearUIndex(1,1,t+1)-1;
+                    avgFilterAllVariables(startIndex:endIndex) = avgFilter;
+                    startIndex = linearUIndex(1,1,t+1);
+                    endIndex = linearUIndex(1,1,t+2)-1;
+                    avgFilterAllVariables(startIndex:endIndex) = -avgFilter;
+
+                    R_index = linearRIndex(i,j,t);               
+
+                    % update inequalities
+                    Aineq(index+0, :) = avgFilterAllVariables;
+                    Aineq(index+0, R_index) = -1;
+
+                    Aineq(index+1, :) = -avgFilterAllVariables;
+                    Aineq(index+1, R_index) = -1;
+
+                    index = index+2;
+                end
+            end
+        end
+
+        % Constraint 6 - S - V momentum constraint
+        disp('Generating inequality constraint 6');
+        for t = 1:(T-2)
+            for i = 1:M
+                for j = 1:N
+                    % generate the mean computing matrices
+                    startX = safeIndex(j, -windowSize, N);
+                    endX = safeIndex(j, windowSize, N);
+                    startY = safeIndex(i, -windowSize, M);
+                    endY = safeIndex(i, windowSize, M);
+                    xInterval = endX-startX+1;
+                    yInterval = endY-startY+1;
+                    nSummed = xInterval*yInterval;
+
+                    % build an averaging filter by first putting the summation
+                    % window into the location in the image and then reshaping
+                    % to match the size of the variable vectors
+                    avgFilter = zeros(M, N);
+                    avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
+                        ones(yInterval, xInterval);
+                    avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
+
+                    % put the filter in the variable range for times t and t+1
+                    % since we want to compute the temporal derivatives
+                    avgFilterAllVariables = zeros(1, numVariables);
+                    startIndex = linearVIndex(1,1,t);
+                    endIndex = linearVIndex(1,1,t+1)-1;
+                    avgFilterAllVariables(startIndex:endIndex) = avgFilter;
+                    startIndex = linearVIndex(1,1,t+1);
+                    endIndex = linearVIndex(1,1,t+2)-1;
+                    avgFilterAllVariables(startIndex:endIndex) = -avgFilter;
+
+                    S_index = linearSIndex(i,j,t);               
+
+                    Aineq(index+0, :) = avgFilterAllVariables;
+                    Aineq(index+0, S_index) = -1;
+
+                    Aineq(index+1, :) = -avgFilterAllVariables;
+                    Aineq(index+1, S_index) = -1;
+
+                    index = index+2;
+                end
+            end
+        end 
+
+        % Constraints 7,8 - Lower/upper bounds on UV
+        disp('Generating inequality constraint 7');
+        startIndex = index;
+        endIndex = startIndex + numFlows - 1;
+        Aineq(startIndex:endIndex, 1:numFlows) = eye(numFlows);
+        bineq(startIndex:endIndex) = windowSize*ones(numFlows,1);
+        index = index + numFlows + 1;
+
+        disp('Generating inequality constraint 8');
+        startIndex = index;
+        endIndex = startIndex + numFlows - 1;
+        Aineq(startIndex:endIndex,1:numFlows) = -eye(numFlows);
+        bineq(startIndex:endIndex) = windowSize*ones(numFlows,1);
+        index = index + numFlows + 1;
+
+        Aineq = sparse(Aineq);
+        bineq = sparse(bineq);
     end
     
-    % Constraint 4 - Z - V spatial consistency constraint
-    disp('Generating inequality constraint 4');
-    for t = 1:(T-1)
-        for i = 1:M
-            for j = 1:N
-                % generate the mean computing matrices
-                startX = safeIndex(j, -d, N);
-                endX = safeIndex(j, d, N);
-                startY = safeIndex(i, -d, M);
-                endY = safeIndex(i, d, M);
-                xInterval = endX-startX+1;
-                yInterval = endY-startY+1;
-                nSummed = xInterval*yInterval;
-                
-                % build an averaging filter by first putting the summation
-                % window into the location in the image and then reshaping
-                % to match the size of the variable vector 
-                avgFilter = zeros(M, N);
-                avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
-                    ones(yInterval, xInterval);
-                avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
-                
-                avgFilterAllVariables = zeros(1, numVariables);
-                startIndex = linearVIndex(1,1,t);
-                endIndex = linearVIndex(1,1,t+1)-1;
-                avgFilterAllVariables(startIndex:endIndex) = avgFilter;
-                
-                V_index = linearVIndex(i,j,t);
-                Z_index = linearZIndex(i,j,t);
-               
-                % place vectors into inequality matrices
-                Aineq(index+0, :) = -avgFilterAllVariables;
-                Aineq(index+0, V_index) = Aineq(index+0, V_index) + 1;
-                Aineq(index+0, Z_index) = -1;
-                
-                Aineq(index+1, :) = avgFilterAllVariables;
-                Aineq(index+1, V_index) = Aineq(index+1, V_index) - 1;
-                Aineq(index+1, Z_index) = -1;
-
-                index = index+2;
-            end
-        end
+    if saveCSV
+        save('flow_cache/L.mat', 'L');
+        save('flow_cache/H.mat', 'H');
+        save('flow_cache/Aineq.mat', 'Aineq');
+        save('flow_cache/bineq.mat', 'bineq');
     end
-    
-    % Constraint 5 - R - U momentum constraint
-    disp('Generating inequality constraint 5');
-    for t = 1:(T-2)
-        for i = 1:M
-            for j = 1:N
-                % generate the mean computing matrices
-                startX = safeIndex(j, -d, N);
-                endX = safeIndex(j, d, N);
-                startY = safeIndex(i, -d, M);
-                endY = safeIndex(i, d, M);
-                xInterval = endX-startX+1;
-                yInterval = endY-startY+1;
-                nSummed = xInterval*yInterval;
-                
-                % build an averaging filter by first putting the summation
-                % window into the location in the image and then reshaping
-                % to match the size of the variable vectors
-                avgFilter = zeros(M, N);
-                avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
-                    ones(yInterval, xInterval);
-                avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
-
-                % put the filter in the variable range for times t and t+1
-                % since we want to compute the temporal derivatives
-                avgFilterAllVariables = zeros(1, numVariables);
-                startIndex = linearUIndex(1,1,t);
-                endIndex = linearUIndex(1,1,t+1)-1;
-                avgFilterAllVariables(startIndex:endIndex) = avgFilter;
-                startIndex = linearUIndex(1,1,t+1);
-                endIndex = linearUIndex(1,1,t+2)-1;
-                avgFilterAllVariables(startIndex:endIndex) = -avgFilter;
-                
-                R_index = linearRIndex(i,j,t);               
-                
-                % update inequalities
-                Aineq(index+0, :) = avgFilterAllVariables;
-                Aineq(index+0, R_index) = -1;
-                
-                Aineq(index+1, :) = -avgFilterAllVariables;
-                Aineq(index+1, R_index) = -1;
-
-                index = index+2;
-            end
-        end
-    end
-    
-    % Constraint 6 - S - V momentum constraint
-    disp('Generating inequality constraint 6');
-    for t = 1:(T-2)
-        for i = 1:M
-            for j = 1:N
-                % generate the mean computing matrices
-                startX = safeIndex(j, -d, N);
-                endX = safeIndex(j, d, N);
-                startY = safeIndex(i, -d, M);
-                endY = safeIndex(i, d, M);
-                xInterval = endX-startX+1;
-                yInterval = endY-startY+1;
-                nSummed = xInterval*yInterval;
-                
-                % build an averaging filter by first putting the summation
-                % window into the location in the image and then reshaping
-                % to match the size of the variable vectors
-                avgFilter = zeros(M, N);
-                avgFilter(startY:endY, startX:endX) = (1.0 / nSummed) * ...
-                    ones(yInterval, xInterval);
-                avgFilter = reshape(avgFilter', [1 numPixelsPerFrame]);
-
-                % put the filter in the variable range for times t and t+1
-                % since we want to compute the temporal derivatives
-                avgFilterAllVariables = zeros(1, numVariables);
-                startIndex = linearVIndex(1,1,t);
-                endIndex = linearVIndex(1,1,t+1)-1;
-                avgFilterAllVariables(startIndex:endIndex) = avgFilter;
-                startIndex = linearVIndex(1,1,t+1);
-                endIndex = linearVIndex(1,1,t+2)-1;
-                avgFilterAllVariables(startIndex:endIndex) = -avgFilter;
-
-                S_index = linearSIndex(i,j,t);               
-                
-                Aineq(index+0, :) = avgFilterAllVariables;
-                Aineq(index+0, S_index) = -1;
-                
-                Aineq(index+1, :) = -avgFilterAllVariables;
-                Aineq(index+1, S_index) = -1;
-
-                index = index+2;
-            end
-        end
-    end 
-    
-    % Constraints 7,8 - Lower/upper bounds on UV
-    disp('Generating inequality constraint 7');
-    startIndex = index;
-    endIndex = startIndex + numFlows - 1;
-    Aineq(startIndex:endIndex, 1:numFlows) = eye(numFlows);
-    bineq(startIndex:endIndex) = d*ones(numFlows,1);
-    index = index + numFlows + 1;
-    
-    disp('Generating inequality constraint 8');
-    startIndex = index;
-    endIndex = startIndex + numFlows - 1;
-    Aineq(startIndex:endIndex,1:numFlows) = -eye(numFlows);
-    bineq(startIndex:endIndex) = d*ones(numFlows,1);
-    index = index + numFlows + 1;
-    
-    Aineq = sparse(Aineq);
-    bineq = sparse(bineq);
 
     % Create the estimated flow vector
     UV_init = zeros(numVariables, 1);
@@ -376,12 +413,13 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
         i = 6;
         j = 6;
         t = 1;
+        k = 1;
         
         % pull variable values for spcified index
         ui = linearUIndex(i,j,t);
         vi = linearVIndex(i,j,t);
         pi = linearPIndex(i,j,t);
-        qi = linearQIndex(i,j,t);
+        qi = linearQIndex(i,j,t,k);
         yi = linearYIndex(i,j,t);
         u = UV_new(ui);
         v = UV_new(vi);
@@ -392,8 +430,8 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
         [Xxp, Xyp] = imgradientxy(X{t});
         Xx = Xxp(i,j);
         Xy = Xyp(i,j);
-        It = I{t+1}(i,j) - I{t}(i,j);
-        [Ixp, Iyp] = imgradientxy(I{t});
+        It = I{t+1}(i,j,k) - I{t}(i,j,k);
+        [Ixp, Iyp] = imgradientxy(I{t}(:,:,k));
         Ix = Ixp(i,j);
         Iy = Iyp(i,j);
         test = 1;
@@ -416,8 +454,8 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, lambda, d, use
             end
         end
     end
-    newU{T} = U{T};
-    newV{T} = V{T};
+    %newU{T} = U{T};
+    %newV{T} = V{T};
 end
 
 

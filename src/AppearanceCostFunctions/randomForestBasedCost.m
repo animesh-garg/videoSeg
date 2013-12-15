@@ -36,7 +36,7 @@ disp('Trained Classfier')
 
 %% Computing Costs
 cost = cell(T,1);
-cost{1} = ones(ydim,xdim)-double(X1);
+cost{1} = 2*(ones(ydim,xdim)-double(X1))-1;
 
 for t=2:T
     fprintf ('Processing frame number %d of %d \r', t,T);
@@ -55,6 +55,7 @@ for t=2:T
     
     [~,probs] = forestApply(single(data),forest);
     cost{t} = reshape(probs(:,1),[ydim,xdim]);
+    cost{t} = 2*cost{t} - 1;
     
 end
 
