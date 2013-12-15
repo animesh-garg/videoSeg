@@ -7,6 +7,7 @@ function [videoStruct] = read_data(videoName, T)
 %% Initializing Paths
 startup;
 videoPath = sprintf('%s%s', datasetPath, videoName);
+gtPath = sprintf('%s%s', groundTruthPath, videoName);
 
 %% Getting names of image files
 imageNames = getFileNamesFromDirectory(videoPath,'mode','path','types',{'.jpg','.jpeg','.png'}); %Some script i'd written earlier. Included in utils
@@ -21,7 +22,7 @@ for t=1:T
 end
 
 %% Obtaining Initial segmentation for some object in the video
-segNames = getFileNamesFromDirectory(videoPath,'mode','path','types',{'01.pgm'});
+segNames = getFileNamesFromDirectory(gtPath,'mode','path','types',{'00000.png'});
 if (~isempty(segNames))
     X1 = imresize(imread(segNames{1}),d);
     %initialize for one of the available segmented objects

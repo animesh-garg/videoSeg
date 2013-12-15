@@ -72,6 +72,11 @@ function [newX] = solveLabels(X, U, V, video, T, ...
     
     % TODO: Create the size change variable n stuff
     
+    % normalize lambdas
+    lambda(1) = double(lambda(1)) / double(M*N*T);
+    lambda(2) = double(lambda(2)) / double(M*N*T*spatialWinDim^2);
+    lambda(3) = double(lambda(3)) / double(M*N*(T-1));
+    
     % Get cost acc. to appearance model for each frame t in T
     C = randomForestBasedCost(video);
 
@@ -261,15 +266,36 @@ function [newX] = solveLabels(X, U, V, video, T, ...
 
     if debug
         % query pixel index for debugging
-        i = 7;
-        j = 12;
-        t = 2;
-        a = 5;
-        b = 5;
+        i = 10;
+        j = 10;
+        t = 1;
+        a = 4;
+        b = 4;
         
         % pull variable values for spcified index
         xi = linearXIndex(i,j,t);
-        xi_plus = linearXIndex(i+b-temporalWinSize-1,j+a-temporalWinSize-1,t+1);
+        
+        i_plus = i+b-temporalWinSize-1;
+        j_plus = j+a-temporalWinSize-1;
+        xi_plus = linearXIndex(i_plus,j_plus,t+1);
+        
+        neighborhood_x = zeros(spatialWinDim, spatialWinDim);
+        neighborhood_y = zeros(spatialWinDim, spatialWinDim);
+        for a = -spatialWinSize:spatialWinSize
+            for b = -spatialWinSize:spatialWinSize
+                i_neighbor = safeIndex(i, a, M);
+                j_neighbor = safeIndex(j, b, N);
+                x_index = linearXIndex(i_neighbor,j_neighbor,t+1);
+                y_index = linearYIndex(i_neighbor,j_neighbor,t+1,a+spatialWinSize+1,b+spatialWinSize+1);
+                
+                neighborhood_x(a+spatialWinSize+1,b+spatialWinSize+1) = ...
+                    X_new(x_index);
+                neighborhood_y(a+spatialWinSize+1,b+spatialWinSize+1) = ...
+                    X_new(y_index);
+            end  
+        end
+        
+        
         %yi = linearYIndex(i,j,t,a,b);
         zi = linearZIndex(i,j,t,a,b);
         x = X_new(xi);

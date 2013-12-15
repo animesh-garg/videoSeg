@@ -24,7 +24,7 @@ for t = 1:T-1
     %compute flow using Horn-Schunk method and Flow function in Piotr's
     %toolbox
     fprintf('Computing flows for frame %d...\n', t); 
-    [initU{t},initV{t}] = opticalFlow(rgb2gray(I{t+1}),rgb2gray(I{t}),{'type','HS'});
+    [initU{t},initV{t}] = opticalFlow(rgb2gray(I{t}),rgb2gray(I{t+1}),{'type','SD'});
     %[initU{t},initV{t}] = opticalFlow(rgb2gray(I{t}),rgb2gray(I{t}),{'type','LK'});
 end
 

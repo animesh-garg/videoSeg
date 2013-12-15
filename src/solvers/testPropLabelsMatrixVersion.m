@@ -11,14 +11,15 @@ startup();
 %[videoStruct, T] = genSimpleTestVideo();
 Im = imread('chess.jpg');
 T = 3;
-sequenceName = 'cars1';
-% videoStruct = read_data(sequenceName, T);
-% 
-% for t = 1:length(videoStruct.I)
-%     videoStruct.I{t} = imresize(videoStruct.I{t}, 1.0 / 32.0);
-% end
-% videoStruct.X1 = imresize(videoStruct.X1, 1.0 / 32.0);
-[videoStruct] = generateSyntheticDataMovement(Im,2,2,3,0.01);
+sequenceName = 'parachute';
+videoStruct = read_data(sequenceName, T);
+
+for t = 1:length(videoStruct.I)
+    videoStruct.I{t} = imresize(videoStruct.I{t}, 1.0 / 16.0);
+end
+videoStruct.X1 = imresize(videoStruct.X1, 1.0 / 16.0);
+videoStruct.X1 = videoStruct.X1(:,:,1);
+%[videoStruct] = generateSyntheticDataMovement(Im,2,2,3,0.01);
 
 %T = 5
 
@@ -30,15 +31,21 @@ spatial_nbd_size = 1; %spatial nbd
 T = length(videoStruct.I);
 T = 3;
 
+% THINGS THAT WORK - tested on square with 3 frames
+% [0 1e-2 1] tracks square
+% [1 1e-2 1] tracks square
+
 % set penalties
 lambda = ones(1, 7);
-lambda(1) = 1e3;
-lambda(2) = 1e0;
-lambda(3) = 1e10;
+lambda(1) = 1e0;
+lambda(2) = 1e-2;
+lambda(3) = 1e0;
+
 lambda(4) = 1e0;
 lambda(5) = 1e3;
 lambda(6) = 1e1;
-lambda(7) = 1e-2;
+lambda(7) = 0;
+
 sigma = 0.8;
 useL2Penalty = false;
 loadCSV = false;
@@ -65,7 +72,7 @@ params.lambda =  lambda;
 params.sigma = sigma;
 params.window = window;
 params.spatial_nbd_size = spatial_nbd_size;
-iters = 10;
+iters = 1;
  
 for k = 1:iters
     tic;
@@ -80,9 +87,9 @@ for k = 1:iters
     elapsed = toc;
     fprintf('Flow solver took %f sec for iteration %d\n', elapsed, k);
     
-    loadCSV = true;
-    saveCSV = false;
+%     loadCSV = true;
+%     saveCSV = false;
 end
-
+%%
 visualizeSegmentationResult(videoStruct, X);
  
