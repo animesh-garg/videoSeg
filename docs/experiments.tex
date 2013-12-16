@@ -1,0 +1,18 @@
+\section{Experiments and Metrics}
+\label{sec:Expt}
+As presented in the model in Section~\ref{sec:ProbForm} we have a complete optimization
+model with several integer variables for foreground-background labels.
+
+We will test the performance of our solution on the 
+Berkeley Motion Segmentation Dataset as provided by \cite{brox2010object}.
+The dataset has 26 video sequences with pixel-accurate segmentation annotation of moving objects. A total of 189 frames are annotated.
+
+We will evaluate results from our approach and compare the performance with that of \cite{Felzenszwalb2010b}, \cite{Komodakis2011a}
+and \cite{brox2010object} on this dataset.
+
+Furthermore multiple decoupling strategies will implementation and compared,
+like decoupling time frames v/s decoupling in space. Finally a dual decomposition
+method with also be explored and compared qualitatively with \cite{Komodakis2007a}.
+
+We plan on completing the implementation in MATLAB with the use of CVX and CPLEX
+optimization libraries.

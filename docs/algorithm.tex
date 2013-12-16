@@ -1,0 +1,82 @@
+
+\section{Algorithm}
+
+It is clear that the minimization problem formulated above cannot
+be solved directly using a standard optimization solver. A common
+relaxation in similar problems is to allow the discreet variable to
+be continuous and threshold the solution at the end. Even if we follow
+this approach and relax the optimization problem by allowing $X$
+to be a continuous variable, the temporal labelling coherence penalty
+in the objective function would not be not jointly convex w.r.t $X,W$.
+In this case, we could use a sub-gradient descent based method to
+reach a local minima. However, we want to refrain from the approach
+mentioned above as it would end up finding a relaxed solution (local
+minima) to an already relaxed optimization problem (as we allowed
+$X$ to be continuous instead of discreet). We cannot expect such
+a solution to be very robust. Hence, instead of pursuing an algorithm
+to directly optimize the joint objective function in the discreet
+and continuous variables, we construct two separate minimization problems
+over the continuous and discreet variables and alternate between solving
+them.
+
+
+\subsubsection*{Pseudocode}
+
+Let $f_{I}(X,W)$ denote the objective function to be minimized. The
+algorithm used to minimize the objective function is as follows -
+
+\begin{algorithm}[H]
+\framebox{\begin{minipage}[t]{1\columnwidth}%
+function $solve(I)$
+\begin{itemize}
+\item $X1\leftarrow initialSegment()$
+\item $W\leftarrow generatePriors(I,X1)$
+\item while($!stoppingCriteria$)
+
+\begin{itemize}
+\item $X\leftarrow propogateLabels(I,W)$
+\item $W\leftarrow solveWeights(I,X)$
+\end{itemize}
+\item return $(X,W)$\end{itemize}
+%
+\end{minipage}}\medskip{}
+
+
+\framebox{\begin{minipage}[t]{1\columnwidth}%
+function $propogateLabels(I,W)$
+\begin{itemize}
+\item $X\leftarrow\underset{X}{argmin}f_{I}(X,W)$
+\item return $X$\end{itemize}
+%
+\end{minipage}}
+
+\medskip{}
+\framebox{\begin{minipage}[t]{1\columnwidth}%
+function $solveWeights(I,X)$
+\begin{itemize}
+\item $W\leftarrow\underset{W}{argmin}f_{I}(X,W)$
+\item return $W$\end{itemize}
+%
+\end{minipage}}
+
+\caption{$solve(I)$}
+\end{algorithm}
+
+
+
+\subsubsection*{Analysis and Convergence}
+
+The algorithm used above is very intuitive. In order to find the minima
+for the objective function, we alternate between minimizing over the
+discreet and continuous variables. We therefore tackle two (comparitively)
+simpler optimization problems of finding $\underset{X}{argmin}f_{I}(X,W)$
+and $\underset{W}{argmin}f_{I}(X,W)$ instead of the original complex
+optimization problem. This is a standard optimization approach analogous
+to the block coordinate descent method where at each step we find
+the minima rather than using a gradient/sub-gradient based descent.
+Note that at each step in the iteration, the value of the objective
+function decreases. If we draw an analogy to a two-player game with
+both players alternatively minimizing their cost given the other's
+strategy, this approach would converge to a Nash Equilibrium. Thus,
+we can claim that the algorithm mentioned above converges to a point
+which is a local minima with respect to both $X,W$.

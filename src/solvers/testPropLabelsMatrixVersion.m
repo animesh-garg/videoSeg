@@ -76,8 +76,10 @@ iters = 1;
 
 % loading params
 useL2Penalty = false;
+
 loadCSV = true;
 saveCSV = false;
+
 debug = true;
 
 
@@ -86,14 +88,7 @@ for k = 1:iters
     X = solveLabels(X, U, V, videoStruct, T, lambda, spatial_nbd_size, ...
         window, useL2Penalty, loadCSV, saveCSV, debug);
     elapsed = toc;
-    fprintf('Label solver took %f sec for iteration %d\n', elapsed, k);
-    
-%     tic;
-%     [U, V] = solveWeightsHornSchunk(X, U, V, videoStruct, T, lambda, window, ...
-%         useL2Penalty, loadCSV, saveCSV, debug);
-%     elapsed = toc;
-%     fprintf('Flow solver took %f sec for iteration %d\n', elapsed, k);
-%     
+    fprintf('Label solver took %f sec for iteration %d\n', elapsed, k);    
 
     tic;
     W = solveWeightsAvgMomentum(X, W, videoStruct, T, lambda, window, ...
@@ -110,29 +105,6 @@ for k = 1:iters
 end
 
 
-%% visualize the video
-% 
-% 
-% figure;
-% for t = 1:T
-%    subplot(2,T, t);
-%    imshow(videoStruct.I{t});
-% end
-% 
-% %%
-% %visualizeSegmentationResult(videoStruct, X);
-% 
-% 
-% %figure;
-% %subplot(1,T+1,1);
-% %imshow(255*videoStruct.X1);
-% for t = 1:T
-%    %subplot(1,T+1, t+1);
-%    subplot(2,T, t+T);
-%    imshow(255*X{t});
-% end
-% 
-
 %% Get results
 
 figure
@@ -147,9 +119,16 @@ for t=1:T
     for p = 1:size(boundaryI)        
         imgtmp(boundaryI(p), boundaryJ(p),:) = 255;
     end
-    subplot(1,T, t)
+    subplot(2,T, t)
     imagesc(uint8(imgtmp));%hold on;pause(0.5);
+    
+    if (t<T)
+        subplot (2,T,T+t)
+        quiver(U{t},V{t});
+        set (gca, 'YDIR', 'reverse');
+    end
 end
+
 
 %%
 figure;

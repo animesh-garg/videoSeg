@@ -1,0 +1,19 @@
+\section{Introduction}
+
+The problem of video segmentation is of interest for many areas. 
+\cite{Komodakis2007a, Komodakis2011a} and \cite{Tsai2010}
+have looked at the problem of modelling the MRF in terms of energies. 
+The solution strategy they use is Dual decomposition but without integer programming.
+
+Our study explores the use of state-of-the-art integer program solvers. Modelling integers
+allows us to capture more rich features in video which are usually not directly put in current 
+models. 
+From a given video sequence, and user intialized object(s)
+of interest, the aim is to track the region(s) of interest through
+the subsequent image frames in the video. Majority of other
+methods which address the problem provide locally optimal
+solutions. Such an approach though successful in some applications
+requires a substantial amount of human intervention
+at several points in the solution such as in cases of occlusion,
+change in pose, shape and color and in extreme cases object
+(or a part of object) egresses the frame and re-enters later.
