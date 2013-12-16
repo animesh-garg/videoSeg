@@ -67,12 +67,12 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, ...
         end
     else
         L = zeros(numVariables,1);
-        L(startIndices(3):startIndices(4)-1) = lambda(3) * ones(numPixels,1); % P summation
-        L(startIndices(4):startIndices(5)-1) = lambda(4) * ones(c*numPixels,1); % Q summation (grayscale only for now)
-        L(startIndices(5):startIndices(6)-1) = lambda(5) * ones(numPixels,1);  % Y summation
-        L(startIndices(6):startIndices(7)-1) = lambda(5) * ones(numPixels,1);  % Z summation
-        L(startIndices(7):startIndices(8)-1) = lambda(6) * ones(numMomentum,1); % R summation
-        L(startIndices(8):numVariables) = lambda(6) * ones(numMomentum,1); % S summation
+        L(startIndices(3):startIndices(4)-1) = ones(numPixels,1); % P summation
+        L(startIndices(4):startIndices(5)-1) = ones(c*numPixels,1); % Q summation (grayscale only for now)
+        L(startIndices(5):startIndices(6)-1) = ones(numPixels,1);  % Y summation
+        L(startIndices(6):startIndices(7)-1) = ones(numPixels,1);  % Z summation
+        L(startIndices(7):startIndices(8)-1) = ones(numMomentum,1); % R summation
+        L(startIndices(8):numVariables) = ones(numMomentum,1); % S summation
         L = sparse(L);
 
         % create diagonal quadratic penalty if specified
@@ -81,6 +81,16 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, ...
             H = lambda(7)*eye(numVariables);
         end
     end
+    
+    C = zeros(numVariables,1);
+    C(startIndices(3):startIndices(4)-1) = lambda(3) * L(startIndices(3):startIndices(4)-1); % P summation
+    C(startIndices(4):startIndices(5)-1) = lambda(4) * L(startIndices(4):startIndices(5)-1); % Q summation (grayscale only for now)
+    C(startIndices(5):startIndices(6)-1) = lambda(5) * L(startIndices(5):startIndices(6)-1));  % Y summation
+    C(startIndices(6):startIndices(7)-1) = lambda(5) * L(startIndices(6):startIndices(7)-1);  % Z summation
+    C(startIndices(7):startIndices(8)-1) = lambda(6) * L(startIndices(7):startIndices(8)-1); % R summation
+    C(startIndices(8):numVariables) = lambda(6) * L(startIndices(8):numVariables); % S summation
+    C = sparse(C);
+
    
     % Inequality constraints
     % 1. P auxiliary variables are +/- the spatial similarity (for the
@@ -400,11 +410,11 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, ...
     
     if useL2Penalty
         disp('Solving quadratic program');
-        [UV_new, fval, exitflag, output] = cplexqp(H, L, Aineq, bineq, [], [], ...
+        [UV_new, fval, exitflag, output] = cplexqp(H, C, Aineq, bineq, [], [], ...
           [], [], UV_init);
     else
         disp('Solving linear program');
-        [UV_new, fval, exitflag, output] = cplexlp(L, Aineq, bineq, [], [], ...
+        [UV_new, fval, exitflag, output] = cplexlp(C, Aineq, bineq, [], [], ...
           [], [], UV_init);
     end
     
