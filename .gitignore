@@ -8,5 +8,6 @@
 /docs/*.lyx
 /data/moseg_dataset/
 /data/
-*.*~/src/flow_cache/*.mat
+*.*~
+/src/flow_cache/*.mat
 /src/label_cache/*.mat
