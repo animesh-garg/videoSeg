@@ -129,6 +129,7 @@ end
 % 
 
 %% Get results
+
 figure
 I = videoStruct.I;
 
