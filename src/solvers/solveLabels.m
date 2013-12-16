@@ -106,17 +106,21 @@ function [newX] = solveLabels(X, U, V, video, T, ...
         end
     else
         L = zeros(numVariables,1);
-        L(startIndices(2):startIndices(3)-1) = lambda(2) * ones(numSpatial,1); % Y summation
-    
+        L(startIndices(1):startIndices(2)-1) = appearanceCost; % X summation
+        L(startIndices(2):startIndices(3)-1) = ones(numSpatial,1); % Y summation
+        L(startIndices(3):numVariables) = W_vec;     % Z summation    
+
         % create diagonal quadratic penalty if specified
         H = [];
         if useL2Penalty
             H = lambda(7)*eye(numVariables);
         end
     end
-    L(startIndices(1):startIndices(2)-1) = lambda(1) * appearanceCost; % X summation
-    L(startIndices(3):numVariables) = lambda(3) * W_vec;     % Z summation    
-    L = sparse(L);
+    C = zeros(numVariables,1);   
+    C(startIndices(1):startIndices(2)-1) = lambda(1) * L(startIndices(1):startIndices(2)-1); % X summation
+    C(startIndices(2):startIndices(3)-1) = lambda(2) * L(startIndices(2):startIndices(3)-1); % Y summation
+    C(startIndices(3):numVariables) = lambda(3) * W_vec;     % Z summation    
+    C = sparse(C);
 
    
     % Inequality constraints
@@ -262,7 +266,7 @@ function [newX] = solveLabels(X, U, V, video, T, ...
     end
     
     disp('Solving linear program');
-    [X_new, fval, exitflag, output] = cplexbilp(L, Aineq, bineq, Aeq, beq, X_init);
+    [X_new, fval, exitflag, output] = cplexbilp(C, Aineq, bineq, Aeq, beq, X_init);
 
     if debug
         % query pixel index for debugging

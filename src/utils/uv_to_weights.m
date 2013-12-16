@@ -18,10 +18,10 @@ function weights = uv_to_weights(U, V, win)
             b_upper = ceil(V(x,y));
             b_lower = floor(V(x,y));
             
-            u_lower = (U(x,y) - a_lower) / (a_upper - a_lower);
-            v_lower = (V(x,y) - b_lower) / (b_upper - b_lower);
-            u_upper = (a_upper - U(x,y)) / (a_upper - a_lower);
-            v_upper = (b_upper - V(x,y)) / (b_upper - b_lower);
+            u_upper = (U(x,y) - a_lower) / (a_upper - a_lower);
+            v_upper = (V(x,y) - b_lower) / (b_upper - b_lower);
+            u_lower = (a_upper - U(x,y)) / (a_upper - a_lower);
+            v_lower = (b_upper - V(x,y)) / (b_upper - b_lower);
             
             if a_upper == a_lower
                 u_lower = 1;

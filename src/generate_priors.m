@@ -24,8 +24,11 @@ for t = 1:T-1
     %compute flow using Horn-Schunk method and Flow function in Piotr's
     %toolbox
     fprintf('Computing flows for frame %d...\n', t); 
-    [initU{t},initV{t}] = opticalFlow(rgb2gray(I{t}),rgb2gray(I{t+1}),{'type','SD'});
+    %[initU{t},initV{t}] = opticalFlow(rgb2gray(I{t}),rgb2gray(I{t+1}),{'type','SD'});
     %[initU{t},initV{t}] = opticalFlow(rgb2gray(I{t}),rgb2gray(I{t}),{'type','LK'});
+    UV = estimate_flow_interface(I{t},I{t+1},'classic+nl-fast');
+    initU{t} = UV(:,:,1);
+    initV{t} = UV(:,:,2);
 end
 
 %% get the initial weights
