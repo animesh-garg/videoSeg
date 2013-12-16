@@ -55,6 +55,20 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, ...
     startIndices(7) = startIndices(6) + numPixels;  % R
     startIndices(8) = startIndices(7) + numMomentum;% S
     
+    % Compute the average intensity for each of the images
+    K = zeros(c,1);
+    for i = 1:c
+        for t = 1:T
+           K(i) = ((t-1)/t) * K(i) + (1.0/t) * mean(mean(video.I{t}(:,:,i)));
+        end
+    end
+    
+    % Normalize lambdas
+    lambda(3) = double(lambda(3)) / double((2*windowSize+1)*M*N*T);
+    lambda(4) = double(lambda(4)) / double((2*windowSize+1)*M*N*T*(K(1)+K(2)+K(3)));
+    lambda(5) = double(lambda(5)) / double(2*(2*windowSize+1)*M*N*T); 
+    lambda(6) = double(lambda(6)) / double(2*(2*windowSize+1)*M*N*T); 
+    
     % Create cost vector to sum up the auxiliary variables
     if loadCSV
         L = load('flow_cache/L.mat', 'L');
