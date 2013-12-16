@@ -106,22 +106,17 @@ function [newX] = solveLabels(X, U, V, video, T, ...
         end
     else
         L = zeros(numVariables,1);
-        L(startIndices(1):startIndices(2)-1) = appearanceCost; % X summation
-        L(startIndices(2):startIndices(3)-1) = ones(numSpatial,1); % Y summation
-        L(startIndices(3):numVariables) = W_vec;     % Z summation    
-
+        L(startIndices(2):startIndices(3)-1) = lambda(2) * ones(numSpatial,1); % Y summation
+    
         % create diagonal quadratic penalty if specified
         H = [];
         if useL2Penalty
             H = lambda(7)*eye(numVariables);
         end
     end
-    C = sparse(numVariables,1);   
-    %C = zeros(numVariables,1);   
-    C(startIndices(1):startIndices(2)-1) = lambda(1) * L(startIndices(1):startIndices(2)-1); % X summation
-    C(startIndices(2):startIndices(3)-1) = lambda(2) * L(startIndices(2):startIndices(3)-1); % Y summation
-    C(startIndices(3):numVariables) = lambda(3) * W_vec;     % Z summation    
-    %C = sparse(C);
+    L(startIndices(1):startIndices(2)-1) = lambda(1) * appearanceCost; % X summation
+    L(startIndices(3):numVariables) = lambda(3) * W_vec;     % Z summation    
+    L = sparse(L);
 
    
     % Inequality constraints
@@ -144,10 +139,8 @@ function [newX] = solveLabels(X, U, V, video, T, ...
         beq = load('label_cache/beq.mat');
         beq = beq.beq; 
     else
-        %Aineq = zeros(numInequalityConstraints, numVariables);
-        Aineq = sparse(numInequalityConstraints, numVariables);
-        %bineq = zeros(numInequalityConstraints, 1);
-        bineq = sparse(numInequalityConstraints, 1);
+        Aineq = zeros(numInequalityConstraints, numVariables);
+        bineq = zeros(numInequalityConstraints, 1);
     end
     
     % helper functions for indexing into the arrays
@@ -197,7 +190,7 @@ function [newX] = solveLabels(X, U, V, video, T, ...
         end
 
         % Constraint 2 - Z label similarity constraint
-        disp('Generating inequality constraint 2');        
+        disp('Generating inequality constraint 2');
         for t = 1:(T-1)
             for i = 1:M
                 for j = 1:N
@@ -229,12 +222,18 @@ function [newX] = solveLabels(X, U, V, video, T, ...
                     end
                 end
             end
-        end        
+        end
+        
+        %constraint 3 - Area of the foreground remains within a factor
+        %sigma over consecutive time frames 
+        for t = 1: T-1
+            
+        end
 
         Aineq = sparse(Aineq);
         bineq = sparse(bineq);
         
-        disp('Generating equality constraints');        
+        disp('Generating equality constraints');
         numEqualityConstraints = numPixelsPerFrame; % only constrain the first frame
         Aeq = zeros(numEqualityConstraints, numVariables);
         beq = zeros(numEqualityConstraints, 1);
@@ -248,9 +247,6 @@ function [newX] = solveLabels(X, U, V, video, T, ...
                 k = k+1;
             end
         end
-        
-        Aeq = sparse(Aeq);        
-        beq = sparse(beq);
     end
     
     if saveCSV
@@ -272,7 +268,7 @@ function [newX] = solveLabels(X, U, V, video, T, ...
     end
     
     disp('Solving linear program');
-    [X_new, fval, exitflag, output] = cplexbilp(C, Aineq, bineq, Aeq, beq, X_init);
+    [X_new, fval, exitflag, output] = cplexbilp(L, Aineq, bineq, Aeq, beq, X_init);
 
     if debug
         % query pixel index for debugging

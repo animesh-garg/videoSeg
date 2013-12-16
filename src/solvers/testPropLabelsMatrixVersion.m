@@ -22,15 +22,6 @@ videoStruct.X1 = imresize(videoStruct.X1, 1.0 / 16.0);
 videoStruct.X1 = videoStruct.X1(:,:,1);
 %[videoStruct] = generateSyntheticDataMovement(Im,2,2,3,0.01);
 
-%% visualize the video
-
-figure;
-for t = 1:T
-   subplot(1,T, t);
-   imshow(videoStruct.I{t});
-end
-
-
 %% get flows
 % set vars
 window = 2; %value of b temp nbd
@@ -49,9 +40,9 @@ T = 3;
 
 % set penalties
 lambda = ones(1, 7);
-lambda(1) = 1e-1;
-lambda(2) = 1e-2;
-lambda(3) = 1e0;
+lambda(1) = 1e0;
+lambda(2) = 1e-1;
+lambda(3) = 1e1;
 
 lambda(4) = 1e0;
 lambda(5) = 1e3;
@@ -59,10 +50,6 @@ lambda(6) = 1e1;
 lambda(7) = 0;
 
 sigma = 0.8;
-useL2Penalty = false;
-loadCSV = true;
-saveCSV = false;
-debug = true;
 
 [initU, initV, initW, avgColorF, avgColorB] = generate_priors(videoStruct);
 
@@ -84,24 +71,71 @@ params.lambda =  lambda;
 params.sigma = sigma;
 params.window = window;
 params.spatial_nbd_size = spatial_nbd_size;
-iters = 1;
- 
+iters = 3;
+
+% loading params
+useL2Penalty = false;
+loadCSV = false;
+saveCSV = true;
+debug = true;
+
+
 for k = 1:iters
     tic;
     X = solveLabels(X, U, V, videoStruct, T, lambda, spatial_nbd_size, ...
-        window, useL2Penalty, loadCSV, saveCSV, debug);
+        window, useL2Penalty, true, false, debug);
     elapsed = toc;
     fprintf('Label solver took %f sec for iteration %d\n', elapsed, k);
     
-%     tic;
-%     [U, V] = solveWeightsHornSchunk(X, U, V, videoStruct, T, lambda, window, ...
-%         useL2Penalty, loadCSV, saveCSV, debug);
-%     elapsed = toc;
-%     fprintf('Flow solver took %f sec for iteration %d\n', elapsed, k);
-%     
-%     loadCSV = true;
-%     saveCSV = false;
+    tic;
+    [U, V] = solveWeightsHornSchunk(X, U, V, videoStruct, T, lambda, window, ...
+        useL2Penalty, loadCSV, saveCSV, debug);
+    elapsed = toc;
+    fprintf('Flow solver took %f sec for iteration %d\n', elapsed, k);
+    
+    loadCSV = true;
+    saveCSV = false;
 end
-%%
-visualizeSegmentationResult(videoStruct, X);
+
+
+%% visualize the video
+% 
+% 
+% figure;
+% for t = 1:T
+%    subplot(2,T, t);
+%    imshow(videoStruct.I{t});
+% end
+% 
+% %%
+% %visualizeSegmentationResult(videoStruct, X);
+% 
+% 
+% %figure;
+% %subplot(1,T+1,1);
+% %imshow(255*videoStruct.X1);
+% for t = 1:T
+%    %subplot(1,T+1, t+1);
+%    subplot(2,T, t+T);
+%    imshow(255*X{t});
+% end
+% 
+
+%% Get results
+figure
+I = videoStruct.I;
+
+for t=1:T
+    imgtmp = I{t};
+    edgeTemp = edge(X{t});
+    boundaryIdx = find (edgeTemp>0.5);
+    [boundaryI, boundaryJ] = ind2sub(size(edgeTemp), boundaryIdx);
+    C = size(I{t},3);    
+    for p = 1:size(boundaryI)        
+        imgtmp(boundaryI(p), boundaryJ(p),:) = 255;
+    end
+    subplot(1,T, t)
+    imagesc(uint8(imgtmp));%hold on;pause(0.5);
+end
+
  
