@@ -44,9 +44,9 @@ lambda(1) = 1e0;
 lambda(2) = 1e-1;
 lambda(3) = 1e1;
 
-lambda(4) = 1e1;
-lambda(5) = 1e3;
-lambda(6) = 1e1;
+lambda(4) = 1e0;
+lambda(5) = 1e1;
+lambda(6) = 1e0;
 lambda(7) = 0;
 
 sigma = 0.8;
@@ -71,28 +71,35 @@ params.lambda =  lambda;
 params.sigma = sigma;
 params.window = window;
 params.spatial_nbd_size = spatial_nbd_size;
-iters = 3;
+iters = 2;
 
 % loading params
 useL2Penalty = false;
-loadCSV = false;
-saveCSV = true;
+loadCSV = true;
+saveCSV = false;
 debug = true;
 
 
 for k = 1:iters
     tic;
     X = solveLabels(X, U, V, videoStruct, T, lambda, spatial_nbd_size, ...
-        window, useL2Penalty, true, false, debug);
+        window, useL2Penalty, loadCSV, saveCSV, debug);
     elapsed = toc;
     fprintf('Label solver took %f sec for iteration %d\n', elapsed, k);
     
-    tic;
-    [U, V] = solveWeightsHornSchunk(X, U, V, videoStruct, T, lambda, window, ...
-        useL2Penalty, loadCSV, saveCSV, debug);
-    elapsed = toc;
-    fprintf('Flow solver took %f sec for iteration %d\n', elapsed, k);
-    
+%     tic;
+%     [U, V] = solveWeightsHornSchunk(X, U, V, videoStruct, T, lambda, window, ...
+%         useL2Penalty, loadCSV, saveCSV, debug);
+%     elapsed = toc;
+%     fprintf('Flow solver took %f sec for iteration %d\n', elapsed, k);
+%     
+
+%     tic;
+%     [U, V] = solveWeightsHornSchunk(X, U, V, videoStruct, T, lambda, window, ...
+%         useL2Penalty, loadCSV, saveCSV, debug);
+%     elapsed = toc;
+%     fprintf('Flow solver took %f sec for iteration %d\n', elapsed, k);
+%     
     loadCSV = true;
     saveCSV = false;
 end
