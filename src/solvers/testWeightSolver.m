@@ -2,10 +2,20 @@
 
 % setup the problem
 %video = genSimpleTestVideo();
+clear;
+clc;
+close all;
+times = [];
 
-T = 5;
+% recording times for experiment w/ 16x16 image of downsampled chessboard
+% versus time win=1, 16x16
+% versus weight window size 16x16, T=4
+% versus image size win=1, T=4
+
+%%
+T = 4;
 image = imread('src/utils/chess.jpg');
-video = generateSyntheticDataMovement(image, -2*sin(1:T), 2*cos(1:T), T, 0.01);
+video = generateSyntheticDataMovement(image, -1*sin(1:T), 1*cos(1:T), T, 0.015);
 
 figure;
 for i = 1:T
@@ -15,12 +25,13 @@ end
 
 [m, n, c] = size(video.I{1});
 
+
 %% calculate new weights
 U_init = cell(1,T);
 V_init = cell(1,T);
 W_init = cell(1,T);
 
-windowSize = 2;
+windowSize = 1;
 
 for t = 1:T
     U_init{t} = zeros(m, n);
@@ -39,8 +50,8 @@ lambda(6) = 1e1;
 lambda(7) = 1e-2;
 
 useL2Penalty = false;
-loadCSV = true;
-saveCSV = false;
+loadCSV = false;
+saveCSV = true;
 debug = false;
 
 % solve
@@ -48,6 +59,8 @@ tic;
 [newW] = solveWeightsAvgMomentum(video.gTruth.X, W_init, ...
     video, T, lambda, windowSize, useL2Penalty, loadCSV, saveCSV, debug);
 elapsed = toc;
+
+times = [times elapsed];
 
 fprintf('Optimization took %f sec\n', elapsed); 
 
@@ -59,3 +72,10 @@ for i = 1:(T-1)
     [newU{i}, newV{i}] = weights_to_uv(newW{i});
     visualizeFlow(video.I{i}, newU{i}, newV{i});
 end
+
+%% plot
+figure;
+plot([4 8 16 24], times);
+title('Time to Solve Versus Image Size', 'FontSize', 20);
+xlabel('Image Width (pixels)', 'FontSize', 15);
+ylabel('Time to Solve (sec)', 'FontSize', 15);

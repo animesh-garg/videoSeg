@@ -31,6 +31,20 @@ function [newW] = solveWeightsAvgMomentum(X, W, video, T, lambda, ...
     numVariables = numWeights + numPixels + numPixels + numMomentum + numMomentum;
     numVariableTypes = 5;
     
+    % Compute the average intensity for each of the images
+    K = zeros(c,1);
+    for i = 1:c
+        for t = 1:T
+           K(i) = ((t-1)/t) * K(i) + (1.0/t) * mean(mean(video.I{t}(:,:,i)));
+        end
+    end
+    
+    % Normalize lambdas
+    lambda(3) = double(lambda(3)) / double((win^2)*M*N*(T-1));
+    lambda(4) = double(lambda(4)) / double((win^2)*M*N*(T-1)*(K(1)+K(2)+K(3)));
+    lambda(5) = double(lambda(5)) / double(2*M*N*(T-1)); 
+    lambda(6) = double(lambda(6)) / double(2*M*N*(T-2)); 
+    
     % Compute all of the start indices
     startIndices = zeros(numVariableTypes,1);
     startIndices(1) = 1;                            % W

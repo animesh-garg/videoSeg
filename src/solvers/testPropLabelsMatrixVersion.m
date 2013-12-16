@@ -14,11 +14,12 @@ T = 3;
 startFrame = 15;
 sequenceName = 'bird_of_paradise';
 videoStruct = read_data(sequenceName, T, startFrame);
+d = 1.0 / 20.0;
 
 for t = 1:length(videoStruct.I)
-    videoStruct.I{t} = imresize(videoStruct.I{t}, 1.0 / 16.0);
+    videoStruct.I{t} = imresize(videoStruct.I{t}, d);
 end
-videoStruct.X1 = imresize(videoStruct.X1, 1.0 / 16.0);
+videoStruct.X1 = imresize(videoStruct.X1, d);
 videoStruct.X1 = videoStruct.X1(:,:,1);
 %[videoStruct] = generateSyntheticDataMovement(Im,2,2,3,0.01);
 
@@ -38,19 +39,6 @@ T = 3;
 % [1 1e-2 1] tracks incorrectly
 % [1e10 1e-2 1] tracks incorrectly
 
-% set penalties
-lambda = ones(1, 7);
-lambda(1) = 1e0;
-lambda(2) = 1e-1;
-lambda(3) = 1e1;
-
-lambda(4) = 1e0;
-lambda(5) = 1e1;
-lambda(6) = 1e0;
-lambda(7) = 0;
-
-sigma = 0.8;
-
 [initU, initV, initW, avgColorF, avgColorB] = generate_priors(videoStruct);
 
 % video = read_data(sequenceName);
@@ -67,11 +55,24 @@ end
 X = initX;
 
 %% define params
+% set penalties
+lambda = ones(1, 7);
+lambda(1) = 1e0;
+lambda(2) = 1e-1;
+
+lambda(3) = 1e0;
+lambda(4) = 1e2;
+lambda(5) = 1e-1;
+lambda(6) = 1e0;
+lambda(7) = 0;
+
+sigma = 0.8;
+
 params.lambda =  lambda;
 params.sigma = sigma;
 params.window = window;
 params.spatial_nbd_size = spatial_nbd_size;
-iters = 2;
+iters = 1;
 
 % loading params
 useL2Penalty = false;
@@ -94,12 +95,16 @@ for k = 1:iters
 %     fprintf('Flow solver took %f sec for iteration %d\n', elapsed, k);
 %     
 
-%     tic;
-%     [U, V] = solveWeightsHornSchunk(X, U, V, videoStruct, T, lambda, window, ...
-%         useL2Penalty, loadCSV, saveCSV, debug);
-%     elapsed = toc;
-%     fprintf('Flow solver took %f sec for iteration %d\n', elapsed, k);
-%     
+    tic;
+    W = solveWeightsAvgMomentum(X, W, videoStruct, T, lambda, window, ...
+        useL2Penalty, loadCSV, saveCSV, debug);
+    elapsed = toc;
+    fprintf('Weight solver took %f sec for iteration %d\n', elapsed, k);
+    
+    for t = 1:(T-1)
+        [U{t},V{t}] = weights_to_uv(W{t});
+    end
+    
     loadCSV = true;
     saveCSV = false;
 end
@@ -145,5 +150,13 @@ for t=1:T
     subplot(1,T, t)
     imagesc(uint8(imgtmp));%hold on;pause(0.5);
 end
+
+%%
+figure;
+subplot(1,2,1);
+quiver(U{1},V{1});
+set(gca,'YDir','reverse');
+subplot(1,2,2);
+imshow(videoStruct.I{1});
 
  
