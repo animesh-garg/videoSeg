@@ -43,19 +43,19 @@ lambda = ones(1, 7);
 lambda(1) = 1e0;% unary costs in label solver
 lambda(2) = 1e-1;% spatial similarity cost in label solver
 
-<<<<<<< HEAD
+
 lambda(3) = 1e4; %temporal similarity in both flow and labels
 
-lambda(4) = 1e2;% color intensity similarity for corresposnding pixels in flow solver
-lambda(5) = 1e0;% spatial flow similarity
-lambda(6) = 1e0;% temporal flow similarity
-lambda(7) = 0; %quadratic penalty
-=======
+%lambda(4) = 1e2;% color intensity similarity for corresposnding pixels in flow solver
+%lambda(5) = 1e0;% spatial flow similarity
+%lambda(6) = 1e0;% temporal flow similarity
+%lambda(7) = 0; %quadratic penalty
+
 lambda(4) = 1e0;
 lambda(5) = 1e1;
 lambda(6) = 1e0;
 lambda(7) = 0;
->>>>>>> e8e90d9f0ff4c249a67bfe736277d88446513a4b
+
 
 sigma = 0.8;
 
@@ -83,13 +83,10 @@ iters = 1;
 
 % loading params
 useL2Penalty = false;
-<<<<<<< HEAD
-loadCSV = true;%false;
-saveCSV = false;%true;
-=======
+
 loadCSV = true;
 saveCSV = false;
->>>>>>> e8e90d9f0ff4c249a67bfe736277d88446513a4b
+
 debug = true;
 
 
