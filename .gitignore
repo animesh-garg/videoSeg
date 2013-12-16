@@ -8,3 +8,5 @@
 /data/moseg_dataset/
 /data/
 *.*~
+/src/flow_cache/
+/src/label_cache/

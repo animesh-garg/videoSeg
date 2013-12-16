@@ -44,7 +44,7 @@ lambda(1) = 1e0;
 lambda(2) = 1e-1;
 lambda(3) = 1e1;
 
-lambda(4) = 1e0;
+lambda(4) = 1e1;
 lambda(5) = 1e3;
 lambda(6) = 1e1;
 lambda(7) = 0;
