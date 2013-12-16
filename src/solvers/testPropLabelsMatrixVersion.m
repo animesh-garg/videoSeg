@@ -40,14 +40,15 @@ T = 3;
 
 % set penalties
 lambda = ones(1, 7);
-lambda(1) = 1e0;
-lambda(2) = 1e-1;
-lambda(3) = 1e1;
+lambda(1) = 1e0;% unary costs in label solver
+lambda(2) = 1e-1;% spatial similarity cost in label solver
 
-lambda(4) = 1e1;
-lambda(5) = 1e3;
-lambda(6) = 1e1;
-lambda(7) = 0;
+lambda(3) = 1e4; %temporal similarity in both flow and labels
+
+lambda(4) = 1e2;% color intensity similarity for corresposnding pixels in flow solver
+lambda(5) = 1e0;% spatial flow similarity
+lambda(6) = 1e0;% temporal flow similarity
+lambda(7) = 0; %quadratic penalty
 
 sigma = 0.8;
 
@@ -71,12 +72,12 @@ params.lambda =  lambda;
 params.sigma = sigma;
 params.window = window;
 params.spatial_nbd_size = spatial_nbd_size;
-iters = 2;
+iters = 1;
 
 % loading params
 useL2Penalty = false;
-loadCSV = false;
-saveCSV = true;
+loadCSV = true;%false;
+saveCSV = false;%true;
 debug = true;
 
 
@@ -135,8 +136,15 @@ for t=1:T
     for p = 1:size(boundaryI)        
         imgtmp(boundaryI(p), boundaryJ(p),:) = 255;
     end
-    subplot(1,T, t)
+    subplot(2,T, t)
     imagesc(uint8(imgtmp));%hold on;pause(0.5);
+    
+    if (t<T)
+        subplot (2,T,T+t)
+        quiver(U{t},V{t});
+        set (gca, 'YDIR', 'reverse');
+    end
 end
+
 
  
