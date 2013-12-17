@@ -1,10 +1,10 @@
 \section{Implementation Details}
 
-Note that the reformulation mentioned above does not neccesiate any
+Note that the reformulation mentioned above does not necessitate any
 change in the proposed optimization algorithm as we still need to
 follow the block-gradient descent method (since even the reformulation
 does not make the objective jointly convex in $X,W$ and $X$ is still
-required to be discreet). In our implementation, we experiment with both the relaxed formulation as well as the original formulation (with mometum penalty modified to be convex). In this section, we descibe the finer implementation details of our algorithm.
+required to be discreet). In our implementation, we experiment with both the relaxed formulation as well as the original formulation (with momentum penalty modified to be convex). In this section, we describe the finer implementation details of our algorithm.
 
 
 \subsection{Initialization}
@@ -45,18 +45,31 @@ a given frame being a foreground pixel by classifying the patch surrounding
 it using the trained classifier. The foreground label cost for the
 given pixel is stored as $1-classifierProbability(I_{ijt})$.
 
-\begin{figure}[H]
+\begin{figure*}[t]
 \begin{centering}
-\includegraphics[scale=0.2]{figures/UnaryCostGT}\includegraphics[scale=0.2]{figures/UnaryCost}\caption{Appearance Costs visualization : Low intensity represents low foreground cost
+\includegraphics[scale=0.4]{figures/UnaryCostGT}\includegraphics[scale=0.4]{figures/UnaryCost}\caption{Appearance Costs visualization : Low intensity represents low foreground cost
 (object being tracked is upper car)}
-
 \par\end{centering}
-
-\end{figure}
-
-
+\end{figure*}
 
 \subsection{Finding flows given label assignments}
 
 
-\subsection{Propogating labels}
+\subsection{Propagating labels}
+Given the initial segmentation mask, the flows for the complete sequence, we run the
+$propagateLabels~$ module to get the segmentation mask through out the video 
+sequence. 
+The sub-problem we consider at this stage considers: (a) Appearance Model Eq
+\eqref{eq: appModel} , (b) Spatial Labeling Constraint Eq\eqref{eq: SLC}, (c) Track 
+Shrinkage Constraint Eq\eqref{eq: shrinkage} and (d) Temporal Labeling Constraint Eq
+\eqref{eq: TLC}.
+The terms in the objective for the corresponding block of variables are included. 
+Each term of the form: $|x|$ is rewritten as a set of 2 constraints:$x \leq t$ and $-x \leq t$, where $t$ is an auxiliary variable. 
+
+The reduced the problem to a \textit{Mixed Integer Problem} for which we use a 
+Matlab based interface to CPLEX solver. We found that the performance of MOSEK 
+solver on MIPs was worse. Noticeably the problem structure uses problem specific information only in the constraints which involve using $W's$ (flows/weights). Problem
+structure is constant for all other sets of constraints, which allows us to re-use the 
+same problem model in subsequent iterations. This model caching results in
+substantial speed up in problem generation time, which we found empirically 
+dominates the problem solution time. 
