@@ -41,7 +41,7 @@ function [newW] = solveWeightsAvgMomentum(X, W, video, T, lambda, ...
     
     % Normalize lambdas
     lambda(3) = double(lambda(3)) / double((win^2)*M*N*(T-1));
-    lambda(4) = double(lambda(4)) / double((win^2)*M*N*(T-1)*(K(1)+K(2)+K(3)));
+    lambda(4) = double(lambda(4)) / double((win^2)*M*N*(T-1)*(sum(K)));
     lambda(5) = double(lambda(5)) / double(2*M*N*(T-1)); 
     lambda(6) = double(lambda(6)) / double(2*M*N*(T-2)); 
     
@@ -381,7 +381,6 @@ function [newW] = solveWeightsAvgMomentum(X, W, video, T, lambda, ...
             end
         end
     end
-    newW{T} = W{T};
 end
 
 

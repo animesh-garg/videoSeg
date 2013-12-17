@@ -13,9 +13,9 @@ times = [];
 % versus image size win=1, T=4
 
 %%
-T = 4;
-image = imread('src/utils/chess.jpg');
-video = generateSyntheticDataMovement(image, -1*sin(1:T), 1*cos(1:T), T, 0.015);
+T = 5;
+image = imread('utils/chess.jpg');
+video = generateSyntheticDataMovement(image, -1*sin(1:T), 1*cos(1:T), T, 0.01);
 
 figure;
 for i = 1:T
@@ -56,7 +56,7 @@ debug = false;
 
 % solve
 tic;
-[newW] = solveWeightsAvgMomentum(video.gTruth.X, W_init, ...
+[newW] = solveWeightsHornSchunk(video.gTruth.X, U_init, V_init, ...
     video, T, lambda, windowSize, useL2Penalty, loadCSV, saveCSV, debug);
 elapsed = toc;
 
@@ -68,7 +68,7 @@ fprintf('Optimization took %f sec\n', elapsed);
 figure;
 for i = 1:(T-1)
     %figure;
-    subplot(2,(T-1)/2,i);
+    subplot(1,(T-1),i);
     [newU{i}, newV{i}] = weights_to_uv(newW{i});
     visualizeFlow(video.I{i}, newU{i}, newV{i});
 end
