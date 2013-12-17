@@ -11,26 +11,43 @@ $O((5 M N T (2 w + 1)^2)^3)$ time. With the Horn-Shunk approximation, all of our
 
 We empirically measured the time to find a solution along each of the dimensions $M, N, T$, and $w$. For simplicity we considered only square images. Figure ~\ref{fig:TimeVsIm} shows the time cost to solve versus the image dimension. We see that increasing the image dimension by a factor of 1.5 from 16x16 to 24x24 leads to a nearly 14x increase in solution time. Similarly in Figure ~\ref{fig:TimeVsLength} we see that the time to solve increases less dramatically, with the cost appearing almost linear. We suspect that this is because the problem size is small enough that the time to build the constraints actually dominates the solution time. Finally in Figure ~\ref{fig:TimeVsWin}, we see that the cost to solve increases dramatically with increased window size, as expected.
 
-\begin{figure}[h]
-\begin{center}
-	\includegraphics[width=0.45\textwidth, height=2in]{figures/time_vs_imsize.jpg}
-	\caption{Time to Solve versus Image Dimension}
-	\label{fig:TimeVsIm}
-\end{center}
-\end{figure}
 
-\begin{figure}[h]
-\begin{center}
-	\includegraphics[width=0.45\textwidth, height=2in]{figures/time_vs_length.jpg}
-	\caption{Time to Solve versus Sequence Length}
-	\label{fig:TimeVsLength}
-\end{center}
-\end{figure}
+\begin{figure*}[t]
+\begin{centering}
+\includegraphics[scale=0.125]{figures/time_vs_imsize.jpg}
+\includegraphics[scale=0.125]{figures/time_vs_window.jpg}
+\includegraphics[scale=0.125]{figures/time_vs_length.jpg}
+\caption{These graphs analyze the time to solve against (a) Image Dimension, 
+(b) Window Size (temporal Neighborhood) and (c) Length of Sequence }
+\par\end{centering}
+\end{figure*}
 
-\begin{figure}[h]
-\begin{center}
-	\includegraphics[width=0.45\textwidth, height=2in]{figures/time_vs_window.jpg}
-	\caption{Time to Solve versus Window Size}
-	\label{fig:TimeVsWin}
-\end{center}
-\end{figure}
+%
+%\begin{center}
+%	\includegraphics[width=0.45\textwidth, height=2in]{figures/time_vs_imsize.jpg}
+%	\caption{Time to Solve versus Image Dimension}
+%	\label{fig:TimeVsIm}
+%\end{center}
+%\begin{figure}[h]
+%\begin{center}
+%	\includegraphics[width=0.45\textwidth, height=2in]{figures/time_vs_imsize.jpg}
+%	\caption{Time to Solve versus Image Dimension}
+%	\label{fig:TimeVsIm}
+%\end{center}
+%\end{figure}
+%
+%\begin{figure}[h]
+%\begin{center}
+%	\includegraphics[width=0.45\textwidth, height=2in]{figures/time_vs_length.jpg}
+%	\caption{Time to Solve versus Sequence Length}
+%	\label{fig:TimeVsLength}
+%\end{center}
+%\end{figure}
+%
+%\begin{figure}[h]
+%\begin{center}
+%	\includegraphics[width=0.45\textwidth, height=2in]{figures/time_vs_window.jpg}
+%	\caption{Time to Solve versus Window Size}
+%	\label{fig:TimeVsWin}
+%\end{center}
+%\end{figure}

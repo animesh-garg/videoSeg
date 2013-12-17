@@ -19,7 +19,7 @@ model with several integer variables for foreground-background labels.
 
 We synthetically generate videos which have a foreground object that undergoes translations, rotations and shrinkage. We use this synthetic data to fine-tune parameters as well as test the performance of our algorithm. Since the ground-truth segmentations of the synthetic data are known, the performance of the algorithm on the data can be readily measured. Unfortunately, due to the complexity issues mentioned above, we are unable to test our approach on real video datsets as the computational time requirement is currently not feasible. We see in Figure \ref{fig:trackSquare} that our algorithm perfectly handles simple cases of tracking synthetic objects with random motions.
 
-\begin{figure*}[t]
+\begin{figure*}[h]
 \begin{center}
 	\includegraphics[scale=0.35]{figures/easy_square_tracking.jpg}
 	\caption{Results of tracking a simple synthetic object. White pixels represent inferred foreground segmentation mask}
@@ -27,7 +27,7 @@ We synthetically generate videos which have a foreground object that undergoes t
 \end{center}
 \end{figure*}
 
-\begin{figure*}[t]
+\begin{figure*}[h]
 \begin{center}
 	\includegraphics[scale=0.35]{figures/car_tracking.jpg}
 	\caption{Results of tracking a downsampled real video without using first order approximations. White pixels represent inferred foreground segmentation boundary}
@@ -35,7 +35,7 @@ We synthetically generate videos which have a foreground object that undergoes t
 \end{center}
 \end{figure*}
 
-\begin{figure*}[t]
+\begin{figure*}[h]
 \begin{center}
 	\includegraphics[scale=0.35]{figures/horn_schunk_car_tracking.jpg}
 	\caption{Results of tracking a downsampled real video using first-order approximations in reformulation. White pixels represent inferred foreground segmentation boundary}
