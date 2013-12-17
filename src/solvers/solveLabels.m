@@ -54,8 +54,11 @@ function [newX] = solveLabels(X, U, V, video, T, ...
         W{t} = uv_to_weights(U{t}, V{t}, temporalWinSize);
         for i = 1:M
             for j = 1:N
+                if t == 1 && i == 9 && j == 11
+                   test = 1; 
+                end
                 temp(:,:) = W{t}(i,j,:,:);
-                W_vec(startIndex:endIndex) = reshape(temp',...
+                W_vec(startIndex:endIndex) = reshape(temp,...
                     [temporalWinDim^2, 1]);
                 startIndex = endIndex+1;
                 endIndex = startIndex + temporalWinDim^2 - 1;
@@ -276,15 +279,16 @@ function [newX] = solveLabels(X, U, V, video, T, ...
 
     if debug
         % query pixel index for debugging
-        i = 10;
-        j = 10;
+        i = 9;
+        j = 11;
         t = 1;
-        a = 4;
+        a = 3;
         b = 4;
         
         % pull variable values for spcified index
         xi = linearXIndex(i,j,t);
         
+        zi = linearZIndex(i,j,t,a,b);
         i_plus = i+b-temporalWinSize-1;
         j_plus = j+a-temporalWinSize-1;
         xi_plus = linearXIndex(i_plus,j_plus,t+1);
@@ -307,7 +311,6 @@ function [newX] = solveLabels(X, U, V, video, T, ...
         
         
         %yi = linearYIndex(i,j,t,a,b);
-        zi = linearZIndex(i,j,t,a,b);
         x = X_new(xi);
         x_plus = X_new(xi_plus);
         %y = X_new(yi);

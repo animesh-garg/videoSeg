@@ -30,8 +30,12 @@ end
 %% Getting the names of the files
 for i = 1:length(types)
     t = dir([dirPath,'/*',types{i}]);
+    temp = cell(1,0);
+    for j = 1:length(t)
+       temp{j} = t(j).name; 
+    end
     if(size(t,1) > 0)
-        nameStruct = [nameStruct extractfield(t,'name')];
+        nameStruct = [nameStruct temp];
     end
 end
 
