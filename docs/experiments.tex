@@ -30,10 +30,17 @@ We synthetically generate videos which have a foreground object that undergoes t
 \begin{figure*}[t]
 \begin{center}
 	\includegraphics[scale=0.35]{figures/car_tracking.jpg}
-	\caption{Results of tracking a downsampled real video. White pixels represent inferred foreground segmentation boundary}
+	\caption{Results of tracking a downsampled real video without using first order approximations. White pixels represent inferred foreground segmentation boundary}
 	\label{fig:trackCar}
 \end{center}
 \end{figure*}
 
+\begin{figure*}[t]
+\begin{center}
+	\includegraphics[scale=0.35]{figures/horn_schunk_car_tracking.jpg}
+	\caption{Results of tracking a downsampled real video using first-order approximations in reformulation. White pixels represent inferred foreground segmentation boundary}
+	\label{fig:HStrackCar}
+\end{center}
+\end{figure*}
 
-In Figure ~\ref{fig:trackCar}, we see that the algorithm performs well on a heavily downsampled real video where it tracks a car across frames.
+In Figures ~\ref{fig:trackCar} and ~\ref{fig:HStrackCar}, we compare the performance of our two formulations on a highly down-sampled real video. We see that the algorithm without the first order approximations performs reasonably well as opposed to the faster version which uses the first order approximations we define in our reformulation.
