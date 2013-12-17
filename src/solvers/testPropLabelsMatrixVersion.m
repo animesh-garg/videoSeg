@@ -74,7 +74,7 @@ params.lambda =  lambda;
 params.sigma = sigma;
 params.window = window;
 params.spatial_nbd_size = spatial_nbd_size;
-iters = 4;
+iters = 1;
 
 % loading params
 useL2Penalty = false;
