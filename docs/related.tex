@@ -1,2 +1,20 @@
 \section{Related Work}
-The problem of foreground tracking and more generally, the problem of video segmentation are well studied in the field of Computer Vision. Many of the prominent approaches treat the problem of video segmentation as that of combining segments obtained independently for various frames. A standard approach is to leverage standard image segmentation algorithms like \cite{CPMC} and filter the segmentation candidates to ensure consistency accross frames. Another commonly used approach where the generated segmentations rely on temporal information is to incoorporate the optical flow information of the frame along with the intensity as an additional layer image and use segmentation algorithms for this layered image eg \cite{LeordeanuSS12}. We observe that these common methods either do not incoorporate temporal information to generate segmentations or only use local temporal signals (from the next frame). In this work we aim to experiment with formulations which jointly capture the temporal information for the whole video aand we therefore tackle the problem of video segmentation as a global optimization problem.
+
+Automatic video segmentation has been studied and solutions which provide a 
+bounding box track. However several applications require a higher fidelity 
+track to accurately localize the foreground in the video. This problem is of 
+importance in several areas of research like behavior analysis in animal studies and object tracking for robot perception, among others.  The problem of foreground tracking and more generally, the problem of video segmentation are well studied in the field of Computer Vision. Many of the prominent approaches treat the problem of video segmentation as that of combining segments obtained independently for various frames. 
+
+A standard approach is to leverage standard image segmentation algorithms like \cite{CPMC} and filter the segmentation candidates to ensure consistency accross frames. Another commonly used approach where the generated segmentations rely on temporal information is to incoorporate the optical flow information of the frame along with the intensity as an additional layer image and use segmentation algorithms for this layered image eg \cite{LeordeanuSS12}. We observe that these common methods either do not incoorporate temporal information to generate segmentations or only use local temporal signals (from the next frame). In this work we aim to experiment with formulations which jointly capture the temporal information for the whole video aand we therefore tackle the problem of video segmentation as a global optimization problem.
+
+\cite{li2013video} approached the problem with an approach using a unsupervised
+approach called as Segmented Pool Tracking with Composite Statistical Inference.
+It generates a pool of segments for each frame via a multiple figure-ground segmentation algorithm. Thereafter, it computes appearance features of each segment in all tracks. Initialize a segment track for each segment in the first frame. Simultaneously learn appearance models for all tracks using multi-output regression. 
+It then greedily matches the tracks across images retaining only the highest matching pair of tracks. Finally it performs a composite statistical inference [\cite{li2013Composite}] which adds temporal consistency to the solution.
+
+Out formulation explicitly captures all the generic requirements of the video
+ segmentation problem with out encoding domain specific information. The major 
+ advantage of our approach is the near exact solution albeit at the computational complexity. However with a careful distributed implementation of the problem
+  generation step, commercially available solvers have shown potential to solve
+  large scale LPs. The preprocessor finds redundant and inactive constraints and 
+  solves the problems in reasonable times. 
