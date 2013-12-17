@@ -3,7 +3,7 @@
 
 It is clear that the minimization problem formulated above cannot
 be solved directly using a standard optimization solver. A common
-relaxation in similar problems is to allow the discreet variable to
+relaxation in similar problems is to allow the discrete variable to
 be continuous and threshold the solution at the end. Even if we follow
 this approach and relax the optimization problem by allowing $X$
 to be a continuous variable, the temporal labelling coherence penalty
@@ -16,7 +16,7 @@ $X$ to be continuous instead of discreet). We cannot expect such
 a solution to be very robust. Hence, instead of pursuing an algorithm
 to directly optimize the joint objective function in the discreet
 and continuous variables, we construct two separate minimization problems
-over the continuous and discreet variables and alternate between solving
+over the continuous and discrete variables and alternate between solving
 them.
 
 
@@ -68,7 +68,7 @@ function $solveWeights(I,X)$
 
 The algorithm used above is very intuitive. In order to find the minima
 for the objective function, we alternate between minimizing over the
-discreet and continuous variables. We therefore tackle two (comparitively)
+discrete and continuous variables. We therefore tackle two (comparitively)
 simpler optimization problems of finding $\underset{X}{argmin}f_{I}(X,W)$
 and $\underset{W}{argmin}f_{I}(X,W)$ instead of the original complex
 optimization problem. This is a standard optimization approach analogous

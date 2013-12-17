@@ -1,12 +1,11 @@
 \begin{abstract} 
 Getting exact video segmentations for tracking and recognition is a challenging problem. 
-A majority of existing methodstrack but provide a bounding box rather than a an exact foreground
-mask for the object. For real worl applications of perception, like robotics, the silhoutte of the object
-perhaps even pose need to be known for hope of success in manipulation tasks.
+A majority of existing methods can track objects in video but provide a bounding box rather than a an exact foreground
+mask for the object. However, for real world applications of perception, like robotics, the silhoutte of an object
+and perhaps even the pose need to be known for hope of success in manipulation tasks.
 
-We propose a method in this study which formulated the problem of video segmentation
-as a Markov random field. However solving such a large graph to global optimality may 
-be computationally expensive. Hence we propose a distributed method using Primal 
-decomposition. 
+In this study, we propose a method for formulating the problem of video segmentation
+as a Markov random field. Solving such a large graph problem to global optimality may 
+be computationally expensive or even intractable. Hence we propose Primal decomposition method for breaking the nonconvex objective into two convex subproblems which can be minimized in alternation to find a local minimum of the objective. 
 
 \end{abstract} 
