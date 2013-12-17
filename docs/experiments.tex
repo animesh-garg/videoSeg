@@ -1,18 +1,21 @@
-\section{Experiments and Metrics}
+\section{Experiments and Results}
 \label{sec:Expt}
 As presented in the model in Section~\ref{sec:ProbForm} we have a complete optimization
 model with several integer variables for foreground-background labels.
 
-We will test the performance of our solution on the 
-Berkeley Motion Segmentation Dataset as provided by \cite{brox2010object}.
-The dataset has 26 video sequences with pixel-accurate segmentation annotation of moving objects. A total of 189 frames are annotated.
+%We will test the performance of our solution on the 
+%Berkeley Motion Segmentation Dataset as provided by %\cite{brox2010object}.
+%The dataset has 26 video sequences with pixel-accurate segmentation %annotation of moving objects. A total of 189 frames are annotated.
+%
+%We will evaluate results from our approach and compare the performance %with that of \cite{Felzenszwalb2010b}, \cite{Komodakis2011a}
+%and \cite{brox2010object} on this dataset.
+%
+%Furthermore multiple decoupling strategies will implementation and %compared,
+%like decoupling time frames v/s decoupling in space. Finally a dual %decomposition
+%method with also be explored and compared qualitatively with %\cite{Komodakis2007a}.
 
-We will evaluate results from our approach and compare the performance with that of \cite{Felzenszwalb2010b}, \cite{Komodakis2011a}
-and \cite{brox2010object} on this dataset.
+%We plan on completing the implementation in MATLAB with the use of CVX %and CPLEX
+%optimization libraries.
 
-Furthermore multiple decoupling strategies will implementation and compared,
-like decoupling time frames v/s decoupling in space. Finally a dual decomposition
-method with also be explored and compared qualitatively with \cite{Komodakis2007a}.
-
-We plan on completing the implementation in MATLAB with the use of CVX and CPLEX
-optimization libraries.
+We synthetically generate videos which have a foreground object that undergoes translations, rotations and shrinkage. We use this synthetic data to fine-tune parameters as well as test the performance of our algorithm. Since the ground-truth segmentations of the synthetic data are known, the performance of the algorithm on the data can be readily measured. Unfortunately, due to the complexity issues mentioned above, we are unable to test our approach on real video datsets as the computational time requirement is currently not feasible.
+Some of the results obtained on our synthetic dataset were as follows -
