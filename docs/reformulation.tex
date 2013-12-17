@@ -13,8 +13,7 @@ we encounter the following difficulties -
 
 \subsubsection*{Non-Convexity}
 
-The momentum continuity penalty as defined above i.e. $M(W)=\underset{i,j,t}{\sum}\quad\underset{a,b\in\{-h,..,h\}}{\sum}W_{ijt}^{ab}(|a-\overline{U}_{i+a,j+b,t+1}|$ \\
-$+|b-\overline{V}_{i+a,j+b,t+1}|)$
+The momentum continuity penalty as defined above i.e. $M(W)=\underset{i,j,t}{\sum}\quad\underset{a,b\in\{-h,..,h\}}{\sum}W_{ijt}^{ab}(|a-\overline{U}_{i+a,j+b,t+1}|+|b-\overline{V}_{i+a,j+b,t+1}|)$
 is non-convex w.r.t $W$ (beacause $U$ is linear w.r.t $W$ so $M(W)$
 has a product of variables of $W_{t},W_{t+1}$).
 
@@ -24,7 +23,11 @@ has a product of variables of $W_{t},W_{t+1}$).
 The size of the variable $W$ is $(2h+1)^{2}*|I|$. For a reasonable
 sized video segment, this value becomes more than $10^{7}$ even if
 we downsample the video. This makes it very difficult to solve the
-minimization problem of this order with limited computational resources in a reasonable time.
+minimization problem of this order with limited computational resources
+in a reasonable time.
+
+\medskip{}
+
 
 We had earlier observed that the variables $W$ and $(U,V)$ can be
 approximated from each other. Since the size of $(U,V)$ is only $|I|$,
@@ -99,7 +102,6 @@ which are explained below. The last constraint specifies that the
 number of foreground pixels in do not change rapidly between consecutive
 frames.
 
-
 \subsubsection*{Appearance Model $A'(X,I)$}
 
 We compute an object model using the segmentation in the first frame.
@@ -130,7 +132,6 @@ F'(W,I)=F(U,V,I)=\underset{i,j,t}{\sum}|\frac{\partial I}{\partial x}U_{i,j,t}+\
 \end{equation}
 
 
-
 \subsubsection*{Temporal Labelling Coherence $T(X,W)$}
 
 Similar to the firsr order approximation to the intersity field $I$,
@@ -148,4 +149,11 @@ T'(X,W)=T(X,U,V)=\underset{i,j,t}{\sum}|\frac{\partial X}{\partial x}U_{i,j,t}+\
 \begin{equation}
 C'(W)+M'(W)=\underset{i,j,t}{\sum}\|\Delta u\|_{1}+\|\Delta v\|_{1}
 \end{equation}
+
+\begin{figure*}[t]
+\begin{centering}
+\includegraphics[scale=0.4]{figures/UnaryCostGT}\includegraphics[scale=0.4]{figures/UnaryCost}\caption{Appearance Costs visualization : Low intensity represents low foreground cost
+(object being tracked is upper car)}
+\par\end{centering}
+\end{figure*}
 

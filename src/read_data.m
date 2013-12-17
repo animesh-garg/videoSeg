@@ -25,7 +25,7 @@ for t=startFrame:(startFrame+T)
 end
 
 %% Obtaining Initial segmentation for some object in the video
-segNames = getFileNamesFromDirectory(gtPath,'mode','path','types',{'14.png'});
+segNames = getFileNamesFromDirectory(gtPath,'mode','path','types',{'.pgm'});
 if (~isempty(segNames))
     X1 = imresize(imread(segNames{1}),d);
     %initialize for one of the available segmented objects

@@ -10,20 +10,20 @@ startup();
 %% create test data
 %[videoStruct, T] = genSimpleTestVideo();
 Im = imread('chess.jpg');
-T = 4;
-startFrame = 15;
-sequenceName = 'bird_of_paradise';
+T = 3;
+startFrame = 1;
+sequenceName = 'cars1';
 subsample = 1;
-% videoStruct = read_data(sequenceName, T, startFrame, subsample);
-% d = 1.0 / 24.0;
-% 
-% for t = 1:length(videoStruct.I)
-%     videoStruct.I{t} = imresize(rgb2gray(videoStruct.I{t}), d);
-% end
-% videoStruct.X1 = imresize(videoStruct.X1, d);
-% videoStruct.X1 = videoStruct.X1(:,:,1);
+videoStruct = read_data(sequenceName, T, startFrame);
+d = 1.0 / 24.0;
 
-[videoStruct] = generateSyntheticDataMovement(Im,2*sin(1:T),2*cos(1:T),T,0.01);
+for t = 1:length(videoStruct.I)
+    videoStruct.I{t} = imresize(rgb2gray(videoStruct.I{t}), d);
+end
+videoStruct.X1 = imresize(videoStruct.X1, d);
+videoStruct.X1 = videoStruct.X1(:,:,1);
+
+%[videoStruct] = generateSyntheticDataMovement(Im,2*sin(1:T),2*cos(1:T),T,0.01);
 
 %% get flows
 % set vars
@@ -58,7 +58,7 @@ X = initX;
 %% define params
 % set penalties
 lambda = ones(1, 7);
-lambda(1) = 1e-2;
+lambda(1) = 1e-1;
 lambda(2) = 1e-2;
 
 lambda(3) = 1e0;
@@ -74,12 +74,12 @@ params.lambda =  lambda;
 params.sigma = sigma;
 params.window = window;
 params.spatial_nbd_size = spatial_nbd_size;
-iters = 1;
+iters = 2;
 
 % loading params
 useL2Penalty = false;
-loadCSV = true;
-saveCSV = false;
+loadCSV = false;
+saveCSV = true;
 
 debug = true;
 
@@ -92,17 +92,17 @@ for k = 1:iters
     fprintf('Label solver took %f sec for iteration %d\n', elapsed, k);    
     
     tic;
-    W = solveWeightsAvgMomentum(X, W, videoStruct, T, lambda, window, ...
+    [U, V] = solveWeightsHornSchunk(X, U, V, videoStruct, T, lambda, window, ...
         useL2Penalty, loadCSV, saveCSV, debug);
     elapsed = toc;
     fprintf('Weight solver took %f sec for iteration %d\n', elapsed, k);
     
-    for t = 1:(T-1)
-        [U{t},V{t}] = weights_to_uv(W{t});
-    end
+%     for t = 1:(T-1)
+%         [U{t},V{t}] = weights_to_uv(W{t});
+%     end
 
-    loadCSV = true;
-    saveCSV = false;
+%     loadCSV = true;
+%     saveCSV = false;
 end
 
 
@@ -120,14 +120,14 @@ for t=1:T
     for p = 1:size(boundaryI)        
         imgtmp(boundaryI(p), boundaryJ(p),:) = 255;
     end
-    subplot(2,T, t)
+    subplot(1, T, t)
     imshow(uint8(imgtmp));%hold on;pause(0.5);
     
-    if (t<T)
-        subplot (2,T,T+t)
-        quiver(U{t},V{t});
-        set (gca, 'YDIR', 'reverse');
-    end
+%     if (t<T)
+%         subplot (2,T,T+t)
+%         quiver(U{t},V{t});
+%         set (gca, 'YDIR', 'reverse');
+%     end
 end
 
 
@@ -142,7 +142,9 @@ imshow(videoStruct.I{1});
 %%
 figure;
 for i = 1:length(X)
-    subplot(1,length(X),i);
+    subplot(2,length(X),i);
+    imshow(videoStruct.I{i});
+    subplot(2,length(X),length(X)+i);
     imshow(255*X{i});
 end
 

@@ -45,14 +45,12 @@ a given frame being a foreground pixel by classifying the patch surrounding
 it using the trained classifier. The foreground label cost for the
 given pixel is stored as $1-classifierProbability(I_{ijt})$.
 
-\begin{figure*}[t]
-\begin{centering}
-\includegraphics[scale=0.4]{figures/UnaryCostGT}\includegraphics[scale=0.4]{figures/UnaryCost}\caption{Appearance Costs visualization : Low intensity represents low foreground cost
-(object being tracked is upper car)}
-\par\end{centering}
-\end{figure*}
 
 \subsection{Finding flows given label assignments}
+
+To find the optimal flows given the label assignments, we need only consider the $T, F, C$, and $M$ costs from the original objective because the other costs do not penalize flow. The only constraint is a lower and upper bound on the flows, to ensure that they lie within some temporal winodw. The function now consists of a number of different L1 penalties of linear functions of the flow, which can be converted to an LP using the epigraph form. We introduce an auxiliary variable for each absolute value appearing in the objective, yielding 8 auxiliary variables for each pixel in the video (supposing 3 color channels). For example, the penalty $\sum_{i j t} |U_{i j t} - \bar{U}_{i j t} |$ is converted to the penalty $\sum_{i j t} R_{i j t} : R_{i j t} \geq \pm (U_{i j t} - \bar{U}_{i j t})$. 
+
+Once the problem is in epigraph form, we put the problem in standard LP form by placing the relevant coefficients for the penalties and linear inequalities into vectors. One difficulty is making this conversion is respecting the image boundaries, since the spatial and temporal windows will exceed the image boundaries. We handle this case by shrinking the window size to fit only the portion of the window that lies within image bounds when placing the linear coefficients into the cost and inequality matrices.
 
 
 \subsection{Propagating labels}

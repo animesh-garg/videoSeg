@@ -108,7 +108,7 @@ function [newX] = solveLabels(X, U, V, video, T, ...
             H = H.H;
         end
     else
-        L = zeros(numVariables,1);
+        L = sparse(numVariables,1);
         L(startIndices(1):startIndices(2)-1) = appearanceCost; % X summation
         L(startIndices(2):startIndices(3)-1) = ones(numSpatial,1); % Y summation
         L(startIndices(3):numVariables) = W_vec;     % Z summation    

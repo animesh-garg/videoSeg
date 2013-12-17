@@ -1918,3 +1918,231 @@ Dual simplex solved model.
 
 Log for '' Clone_1 (V12.5.1.0) Mon Dec 16 02:53:08 2013
 
+
+Log for '' Clone_1 (V12.5.1.0) Mon Dec 16 22:15:57 2013
+
+
+Log for 'CPLEX' Clone_1 (V12.5.1.0) Mon Dec 16 22:16:03 2013
+
+
+Log for '' Clone_1 (V12.5.1.0) Mon Dec 16 22:20:57 2013
+
+
+Log for 'CPLEX' Clone_1 (V12.5.1.0) Mon Dec 16 22:20:58 2013
+
+
+Log for '' Clone_1 (V12.5.1.0) Mon Dec 16 22:26:47 2013
+
+
+Log for 'CPLEX' Clone_1 (V12.5.1.0) Mon Dec 16 22:26:48 2013
+
+
+Log for '' Clone_1 (V12.5.1.0) Mon Dec 16 22:33:29 2013
+
+
+Log for '' Clone_1 (V12.5.1.0) Mon Dec 16 22:35:43 2013
+
+
+Log for '' Clone_1 (V12.5.1.0) Mon Dec 16 22:37:56 2013
+
+
+Log for 'CPLEX' Clone_1 (V12.5.1.0) Mon Dec 16 22:38:09 2013
+
+Tried aggregator 0 times.
+No LP presolve or aggregator reductions.
+Presolve time = 0.03 sec. (22.07 ticks)
+Parallel mode: using up to 3 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 2926858
+Using Nested Dissection ordering
+Total time for automatic ordering = 3.67 sec. (3565.45 ticks)
+Summary statistics for Cholesky factor:
+  Threads                   = 3
+  Rows in Factor            = 14644
+  Integer space required    = 435222
+  Total non-zeros in factor = 16507274
+  Total FP ops to factor    = 27716659822
+ Itn      Primal Obj        Dual Obj  Prim Inf Upper Inf  Dual Inf          
+   0   1.4224025e-01  -3.8883881e+04  5.16e+04  5.23e+03  2.20e+04
+   1   1.0006076e+00  -4.0286641e+03  6.52e-12  0.00e+00  7.55e+02
+   2   9.9308059e-01  -7.8189172e-01  1.59e-10  2.95e-13  8.73e-02
+   3   4.8390507e-02  -1.0196760e-01  8.75e-11  2.93e-13  3.78e-04
+   4   1.3038522e-02  -2.5201047e-03  7.72e-11  2.41e-13  1.42e-05
+   5   3.4495455e-03   1.8632553e-03  4.88e-10  2.77e-13  1.07e-06
+   6   2.6906116e-03   2.5106529e-03  4.77e-09  2.85e-13  5.24e-08
+   7   2.5948213e-03   2.5618403e-03  3.29e-08  2.54e-13  2.56e-08
+   8   2.5747107e-03   2.5708912e-03  1.06e-07  2.72e-13  1.49e-08
+   9   2.5726502e-03   2.5721503e-03  2.54e-07  2.57e-13  6.84e-09
+  10   2.5723015e-03   2.5722522e-03  5.09e-07  2.76e-13  4.68e-10
+  11   2.5722630e-03   2.5722598e-03  9.40e-07  2.95e-13  1.77e-09
+  12   2.5722604e-03   2.5722604e-03  1.96e-06  2.90e-13  3.13e-10
+Barrier time = 22.78 sec. (23247.63 ticks)
+
+Primal crossover.
+  Primal:  Fixing 8 variables.
+        7 PMoves:  Infeasibility  0.00000000e+00  Objective  2.57226038e-03
+        0 PMoves:  Infeasibility  0.00000000e+00  Objective  2.57226038e-03
+  Primal:  Pushed 4, exchanged 4.
+  Dual:  Fixing 1 variable.
+        0 DMoves:  Infeasibility  0.00000000e+00  Objective  2.57226038e-03
+  Dual:  Pushed 0, exchanged 1.
+Using devex.
+Total crossover time = 0.56 sec. (841.31 ticks)
+
+Total time on 3 threads = 23.37 sec. (24112.65 ticks)
+Using devex.
+
+Barrier solved model.
+
+
+Log for '' Clone_1 (V12.5.1.0) Mon Dec 16 22:40:30 2013
+
+
+Log for 'CPLEX' Clone_1 (V12.5.1.0) Mon Dec 16 22:40:38 2013
+
+Tried aggregator 0 times.
+No LP presolve or aggregator reductions.
+Presolve time = 0.03 sec. (22.08 ticks)
+Parallel mode: using up to 3 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 2927618
+Using Nested Dissection ordering
+Total time for automatic ordering = 3.63 sec. (3491.24 ticks)
+Summary statistics for Cholesky factor:
+  Threads                   = 3
+  Rows in Factor            = 14668
+  Integer space required    = 441276
+  Total non-zeros in factor = 16585378
+  Total FP ops to factor    = 28114624062
+ Itn      Primal Obj        Dual Obj  Prim Inf Upper Inf  Dual Inf          
+   0   1.3518879e-01  -3.8935446e+04  5.17e+04  5.20e+03  2.20e+04
+   1   1.0094845e+00  -4.1851233e+03  6.43e-12  0.00e+00  8.53e+02
+   2   1.0028369e+00  -6.8950707e-01  1.26e-10  3.04e-13  7.75e-02
+   3   4.5592682e-02  -9.6461883e-02  7.97e-11  2.97e-13  6.66e-04
+   4   6.5786659e-03  -2.2842615e-03  1.01e-10  2.75e-13  2.21e-05
+   5   2.3716606e-03   1.8042663e-03  8.47e-10  2.93e-13  1.06e-06
+   6   2.1781980e-03   2.0915004e-03  1.13e-08  2.78e-13  1.63e-07
+   7   2.1546666e-03   2.1348157e-03  1.89e-08  2.28e-13  6.11e-08
+   8   2.1497421e-03   2.1469851e-03  2.83e-08  2.39e-13  1.18e-08
+   9   2.1484171e-03   2.1481355e-03  1.22e-07  2.71e-13  1.28e-08
+  10   2.1482956e-03   2.1482869e-03  3.32e-07  2.84e-13  1.29e-09
+  11   2.1482912e-03   2.1482909e-03  8.79e-07  2.80e-13  5.01e-10
+Barrier time = 22.30 sec. (22014.55 ticks)
+
+Primal crossover.
+  Primal:  Fixing 5 variables.
+        4 PMoves:  Infeasibility  9.48871465e-05  Objective  2.14829121e-03
+        0 PMoves:  Infeasibility  3.41523684e-18  Objective  2.14829120e-03
+  Primal:  Pushed 0, exchanged 5.
+  Dual:  Fixing 2 variables.
+        1 DMoves:  Infeasibility  1.29125483e-08  Objective  2.14829120e-03
+        0 DMoves:  Infeasibility  1.29125483e-08  Objective  2.14829120e-03
+  Dual:  Pushed 0, exchanged 2.
+Using devex.
+Total crossover time = 0.51 sec. (685.57 ticks)
+
+Total time on 3 threads = 22.85 sec. (22723.85 ticks)
+Using devex.
+
+Barrier solved model.
+
+
+Log for '' Clone_1 (V12.5.1.0) Mon Dec 16 22:42:31 2013
+
+
+Log for 'CPLEX' Clone_1 (V12.5.1.0) Mon Dec 16 22:42:37 2013
+
+Tried aggregator 0 times.
+No LP presolve or aggregator reductions.
+Presolve time = 0.03 sec. (22.08 ticks)
+Parallel mode: using up to 3 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 2926334
+Using Nested Dissection ordering
+Total time for automatic ordering = 3.49 sec. (3432.64 ticks)
+Summary statistics for Cholesky factor:
+  Threads                   = 3
+  Rows in Factor            = 14676
+  Integer space required    = 439574
+  Total non-zeros in factor = 16508186
+  Total FP ops to factor    = 27662620894
+ Itn      Primal Obj        Dual Obj  Prim Inf Upper Inf  Dual Inf          
+   0   1.3063259e-01  -3.8938216e+04  5.17e+04  5.10e+03  2.20e+04
+   1   1.0062965e+00  -4.2099837e+03  6.45e-12  0.00e+00  8.72e+02
+   2   9.9980802e-01  -6.4390358e-01  1.23e-10  2.96e-13  6.86e-02
+   3   3.9834034e-02  -9.2422110e-02  8.49e-11  2.95e-13  7.52e-04
+   4   4.3239242e-03  -5.9004058e-03  9.83e-11  2.88e-13  5.53e-05
+   5   2.2328673e-03   1.3843625e-03  5.46e-10  2.75e-13  3.07e-06
+   6   1.9555285e-03   1.8348110e-03  4.31e-09  2.79e-13  3.87e-07
+   7   1.9099118e-03   1.8998571e-03  1.40e-08  2.90e-13  2.75e-08
+   8   1.9059424e-03   1.9048706e-03  3.49e-08  2.75e-13  2.03e-08
+   9   1.9054428e-03   1.9053791e-03  1.25e-07  3.01e-13  7.47e-09
+  10   1.9054154e-03   1.9054035e-03  8.62e-07  2.73e-13  2.79e-08
+  11   1.9054118e-03   1.9054092e-03  3.98e-07  2.82e-13  2.67e-08
+  12   1.9054117e-03   1.9054096e-03  3.92e-06  2.71e-13  2.37e-08
+  13   1.9054115e-03   1.9054115e-03  8.28e-07  2.70e-13  1.17e-09
+Barrier time = 25.56 sec. (24636.97 ticks)
+
+Primal crossover.
+  Primal:  Fixing 2 variables.
+        1 PMoves:  Infeasibility  0.00000000e+00  Objective  1.90541152e-03
+        0 PMoves:  Infeasibility  0.00000000e+00  Objective  1.90541154e-03
+  Primal:  Pushed 0, exchanged 2.
+  Dual:  Fixing 1 variable.
+        0 DMoves:  Infeasibility  1.07604213e-07  Objective  1.90541154e-03
+  Dual:  Pushed 0, exchanged 1.
+Using devex.
+Total crossover time = 0.63 sec. (746.67 ticks)
+
+Total time on 3 threads = 26.22 sec. (25407.36 ticks)
+Using devex.
+
+Barrier solved model.
+
+
+Log for '' Clone_1 (V12.5.1.0) Mon Dec 16 22:44:27 2013
+
+
+Log for 'CPLEX' Clone_1 (V12.5.1.0) Mon Dec 16 22:44:35 2013
+
+Tried aggregator 0 times.
+No LP presolve or aggregator reductions.
+Presolve time = 0.03 sec. (22.07 ticks)
+Parallel mode: using up to 3 threads for barrier.
+Number of nonzeros in lower triangle of A*A' = 2917344
+Using Nested Dissection ordering
+Total time for automatic ordering = 3.94 sec. (3444.81 ticks)
+Summary statistics for Cholesky factor:
+  Threads                   = 3
+  Rows in Factor            = 14640
+  Integer space required    = 432978
+  Total non-zeros in factor = 16511076
+  Total FP ops to factor    = 27803126020
+ Itn      Primal Obj        Dual Obj  Prim Inf Upper Inf  Dual Inf          
+   0   1.3921473e-01  -3.8870561e+04  5.15e+04  5.18e+03  2.20e+04
+   1   1.0067012e+00  -4.0845225e+03  6.97e-12  0.00e+00  7.95e+02
+   2   9.9949248e-01  -6.3442194e-01  1.42e-10  3.08e-13  6.23e-02
+   3   3.6213263e-02  -8.7777139e-02  8.86e-11  3.03e-13  2.74e-04
+   4   3.6247661e-03  -7.1616124e-03  1.00e-10  2.93e-13  2.57e-05
+   5   2.2407376e-03   8.8786631e-04  4.45e-10  2.60e-13  2.80e-06
+   6   1.9700409e-03   1.8486286e-03  1.38e-09  2.76e-13  1.96e-07
+   7   1.9306260e-03   1.9138368e-03  7.68e-09  2.91e-13  4.03e-08
+   8   1.9256575e-03   1.9248782e-03  2.84e-08  2.83e-13  4.26e-09
+   9   1.9252643e-03   1.9252282e-03  1.94e-07  2.97e-13  4.98e-09
+  10   1.9252479e-03   1.9252470e-03  6.88e-07  2.90e-13  3.98e-09
+  11   1.9252478e-03   1.9252478e-03  9.62e-07  3.03e-13  1.33e-11
+Barrier time = 23.08 sec. (21643.17 ticks)
+
+Primal crossover.
+  Primal:  Fixing 2 variables.
+        1 PMoves:  Infeasibility  1.75640752e-17  Objective  1.92524778e-03
+        0 PMoves:  Infeasibility  1.75640752e-17  Objective  1.92524778e-03
+  Primal:  Pushed 0, exchanged 2.
+  Dual:  Fixing 1 variable.
+        0 DMoves:  Infeasibility  8.00636351e-08  Objective  1.92524778e-03
+  Dual:  Pushed 0, exchanged 1.
+Using devex.
+Total crossover time = 0.52 sec. (690.18 ticks)
+
+Total time on 3 threads = 23.64 sec. (22357.05 ticks)
+Using devex.
+
+Barrier solved model.
+

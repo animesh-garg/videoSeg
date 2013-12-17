@@ -40,20 +40,14 @@ V_{ijt}=\underset{a,b\in\{-h,..,h\}}{\sum}bW_{ijt}^{ab}
 \begin{equation}
 \underset{X,W}{\min}\enskip\lambda_{1}A(X,I)+\lambda_{2}S(X)+\lambda_{3}T(X,W)
 \end{equation}
-
 \[
 +\lambda_{4}F(W,I) +\lambda_{5}C(W)+\lambda_{6}M(W)
 \]
 
 
 \begin{center}
-
-\begin{equation}\label{eq: shrinkage}
-\forall t\underset{i,j}{|\sum}X_{ijt}-\underset{i,j}{\sum}X_{ij(t+1)}|\leq\sigma\underset{i,j}{\sum}X_{ijt}
-\end{equation}
-
-$$\underset{a,b}{\sum}W_{ijt}^{ab}=1$$
-$$subject~to~W\geq0,\forall(i,j,t)X_{ijt}\in\{0,1\}$$
+subject to $W\geq0,\forall(i,j,t)X_{ijt}\in\{0,1\},\underset{a,b}{\sum}W_{ijt}^{ab}=1$
+and $\forall t\underset{i,j}{|\sum}X_{ijt}-\underset{i,j}{\sum}X_{ij(t+1)}|\leq\sigma\underset{i,j}{\sum}X_{ijt}$
 \par\end{center}
 
 \noindent The objective function comprises of various penatly terms
@@ -69,7 +63,7 @@ foreground model and a corresponding penalty function $f_{I,X'}$
 for a pixel's label given its value. We then define the unary potential
 as follows -
 
-\begin{equation} \label{eq: appModel}
+\begin{equation}
 A(X,I)=\underset{i,j,t}{\sum}f_{I,X'}(X_{ijt},I_{ijt})
 \end{equation}
 
@@ -81,7 +75,7 @@ We want to drive the system towards a labelling where neighbouring
 pixels have similar labels. The spatial labelling coherence term defined
 below encapsulates this.
 
-\begin{equation} \label{eq: SLC}
+\begin{equation}
 S(X)=\underset{i,j,t}{\sum}\quad\underset{Y\in N_{s}(i,j,t)}{\sum}|X_{ijt}-X_{Y}|
 \end{equation}
 
@@ -93,7 +87,7 @@ For a given pixel, the corresponding pixel in the next frame should
 also have the same label. We formalize this notion using the penalty
 function below.
 
-\begin{equation} \label{eq: TLC}
+\begin{equation}
 T(X,W)=\underset{i,j,t}{\sum}\quad\underset{a,b\in\{-h,..,h\}}{\sum}W_{ijt}^{ab}|X_{ijt}-X_{i+a,j+b,t+1}|
 \end{equation}
 
@@ -132,4 +126,6 @@ M(W)=\underset{i,j,t}{\sum}\quad\underset{a,b\in\{-h,..,h\}}{\sum}W_{ijt}^{ab}(|
 \end{equation}
 \[|b-\overline{V}_{i+a,j+b,t+1}|)
 \]
+
+
 

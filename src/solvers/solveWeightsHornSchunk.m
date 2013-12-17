@@ -65,7 +65,7 @@ function [newU, newV] = solveWeightsHornSchunk(X, U, V, video, T, ...
     
     % Normalize lambdas
     lambda(3) = double(lambda(3)) / double((2*windowSize+1)*M*N*T);
-    lambda(4) = double(lambda(4)) / double((2*windowSize+1)*M*N*T*(K(1)+K(2)+K(3)));
+    lambda(4) = double(lambda(4)) / double((2*windowSize+1)*M*N*T*sum(K));
     lambda(5) = double(lambda(5)) / double(2*(2*windowSize+1)*M*N*T); 
     lambda(6) = double(lambda(6)) / double(2*(2*windowSize+1)*M*N*T); 
     
