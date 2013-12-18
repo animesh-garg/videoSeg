@@ -6,7 +6,7 @@
 /docs/*.bak
 /docs/*.blg
 /docs/*.lyx
-/docs/*.pdf
+*.pdf
 /data/moseg_dataset/
 /data/
 *.*~
