@@ -1,0 +1,14 @@
+README
+
+To run the code on a simple test data
+please run ./src/main.m
+
+Realistic data can be downloaded from :
+1. Berkeley Motion Segmentation Dataset
+http://lmb.informatik.uni-freiburg.de/resources/datasets/
+
+2. Georgia Tech Segtrack V2
+http://www.cc.gatech.edu/~fli/SegTrack2/index.html
+
+Extract the datasets into "./data/"
+
