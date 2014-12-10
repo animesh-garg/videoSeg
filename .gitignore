@@ -12,3 +12,5 @@
 *.*~
 /src/flow_cache/*.mat
 /src/label_cache/*.mat
+
+*.tif
